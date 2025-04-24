@@ -6,7 +6,7 @@ import dev.dfeprado.tool.domain.Operation;
 import dev.dfeprado.tool.exceptions.BrokerageNoteReadError;
 import java.util.List;
 
-public interface PdfReader {
+public interface PdfReader extends AutoCloseable {
   NoteHeader parseHeader() throws BrokerageNoteReadError;
 
   List<Operation> parseOperations() throws BrokerageNoteReadError;

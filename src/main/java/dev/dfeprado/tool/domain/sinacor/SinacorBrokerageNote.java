@@ -1,44 +1,62 @@
 package dev.dfeprado.tool.domain.sinacor;
 
 import dev.dfeprado.tool.domain.BrokerageNote;
+import dev.dfeprado.tool.domain.NoteHeader;
+import dev.dfeprado.tool.domain.NoteTotals;
 import dev.dfeprado.tool.domain.Operation;
 import dev.dfeprado.tool.exceptions.BrokerageNoteReadError;
 import dev.dfeprado.tool.input.pdf.PdfReader;
+import dev.dfeprado.tool.input.pdf.pdfbox.SinacorPdfBoxPdfReader;
+
+import java.io.File;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 
 public class SinacorBrokerageNote implements BrokerageNote {
-  private PdfReader reader;
-
-  public SinacorBrokerageNote(PdfReader reader) {
-    this.reader = reader;
+  public static SinacorBrokerageNote readPdf(File brokerageNoteFile) throws BrokerageNoteReadError {
+    try (PdfReader reader = new SinacorPdfBoxPdfReader(brokerageNoteFile)) {
+      return new SinacorBrokerageNote(reader);
+    } catch (Exception e) {
+      throw new BrokerageNoteReadError(e.getMessage());
+    }
   }
 
-  public LocalDate getDate() throws BrokerageNoteReadError {
-    return this.reader.parseHeader().date();
+  private final NoteHeader header;
+  private final NoteTotals totals;
+  private final List<Operation> operations;
+
+  private SinacorBrokerageNote(PdfReader reader) throws BrokerageNoteReadError {
+    header = reader.parseHeader();
+    totals = reader.parseTotals();
+    operations = Collections.unmodifiableList(reader.parseOperations());
   }
 
-  public String getBrokerName() throws BrokerageNoteReadError {
-    return this.reader.parseHeader().brokerName();
+  public LocalDate getDate() {
+    return header.date();
   }
 
-  public String getNumber() throws BrokerageNoteReadError {
-    return this.reader.parseHeader().number();
+  public String getBrokerName() {
+    return header.brokerName();
   }
 
-  public List<Operation> getOps() throws BrokerageNoteReadError {
-    return reader.parseOperations();
+  public String getNumber() {
+    return header.number();
   }
 
-  public double getTotalAmount() throws BrokerageNoteReadError {
-    return reader.parseTotals().total();
+  public List<Operation> getOps() {
+    return operations;
   }
 
-  public double getTax() throws BrokerageNoteReadError {
-    return reader.parseTotals().tax();
+  public double getTotalAmount() {
+    return totals.total();
   }
 
-  public double getEmolumentos() throws BrokerageNoteReadError {
-    return reader.parseTotals().emolumentos();
+  public double getFee() {
+    return totals.fee();
+  }
+
+  public double getEmoluments() {
+    return totals.emoluments();
   }
 }

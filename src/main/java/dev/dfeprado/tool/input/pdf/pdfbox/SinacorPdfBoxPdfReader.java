@@ -21,7 +21,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.text.PDFTextStripperByArea;
 
-public class SinacorPdfBoxPdfReader implements PdfReader, AutoCloseable {
+public class SinacorPdfBoxPdfReader implements PdfReader {
   private static final DateTimeFormatter sinacorDateFormat = DateTimeFormatter.ofPattern("d/M/y");
   private final PDDocument doc;
   private final PDFTextStripperByArea stripper;

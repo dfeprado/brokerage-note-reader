@@ -15,7 +15,7 @@ public interface BrokerageNote {
 
   double getTotalAmount() throws BrokerageNoteReadError;
 
-  double getTax() throws BrokerageNoteReadError;
+  double getFee() throws BrokerageNoteReadError;
 
-  double getEmolumentos() throws BrokerageNoteReadError;
+  double getEmoluments() throws BrokerageNoteReadError;
 }
