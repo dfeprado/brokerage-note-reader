@@ -1,31 +1,20 @@
 package dev.dfeprado.tool.domain;
 
 public class Operation {
-  private final String type;
+  private final OperationType type;
   private final String shareName;
   private final double quantity;
   private final double price;
   private final NoteTotals totals;
 
-  //  double tax;
-  //  double emoluments;
-
   public Operation(
-      String type, String shareName, double quantity, double price, NoteTotals totals) {
+      OperationType type, String shareName, double quantity, double price, NoteTotals totals) {
     this.type = type;
     this.shareName = shareName;
     this.quantity = quantity;
     this.price = price;
     this.totals = totals;
-
-    //    setTaxAndEmolumentos(totals);
   }
-
-  //  private void setTaxAndEmolumentos(NoteTotals totals) {
-  //    double weight = getTotal() / totals.total();
-  //    this.tax = totals.fee() * weight;
-  //    this.emoluments = totals.emoluments() * weight;
-  //  }
 
   public double getTotalIncludingFeesAndEmoluments() {
     return getTotal() + getFee() + getEmoluments();
@@ -44,7 +33,7 @@ public class Operation {
   }
 
   public boolean isBuy() {
-    return type.equals("C");
+    return type == OperationType.BUY;
   }
 
   public String getShareName() {

@@ -85,6 +85,7 @@ class SinacorPdfBoxPdfReaderTest {
       assertEquals("0.11", String.format("%.2f", op.getFee()));
       assertEquals("0.02", String.format("%.2f", op.getEmoluments()));
       assertEquals("455.18", String.format("%.2f", op.getTotalIncludingFeesAndEmoluments()));
+      assertTrue(op.isBuy());
     }
   }
 }

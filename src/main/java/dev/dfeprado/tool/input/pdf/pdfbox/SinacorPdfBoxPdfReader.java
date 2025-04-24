@@ -4,6 +4,7 @@ import dev.dfeprado.tool.Utils;
 import dev.dfeprado.tool.domain.NoteHeader;
 import dev.dfeprado.tool.domain.NoteTotals;
 import dev.dfeprado.tool.domain.Operation;
+import dev.dfeprado.tool.domain.OperationType;
 import dev.dfeprado.tool.exceptions.BrokerageNoteReadError;
 import dev.dfeprado.tool.input.pdf.PdfReader;
 import java.awt.*;
@@ -113,7 +114,7 @@ public class SinacorPdfBoxPdfReader implements PdfReader {
       while (match.find()) {
         Operation op =
             new Operation(
-                match.group(2),
+                match.group(2).matches("[cC]") ? OperationType.BUY : OperationType.SELL,
                 match.group(4),
                 Integer.parseInt(match.group(5)),
                 Utils.toNumber(match.group(6)),
