@@ -46,15 +46,10 @@ public class SinacorPdfBoxPdfReader implements PdfReader {
     }
     stripper.setSortByPosition(true);
     stripper.addRegion("header", new Rectangle(0, 0, (int) firstPage.getBBox().getWidth(), 90));
-    stripper.addRegion(
-        "footer",
-        new Rectangle(
-            (int) firstPage.getBBox().getWidth() / 2,
-            400,
-            (int) firstPage.getBBox().getWidth(),
-            (int) firstPage.getBBox().getHeight()));
-    stripper.addRegion(
-        "operations", new Rectangle(0, 220, (int) firstPage.getBBox().getWidth(), 225));
+    stripper.addRegion("footer", new Rectangle((int) firstPage.getBBox().getWidth() / 2, 400,
+        (int) firstPage.getBBox().getWidth(), (int) firstPage.getBBox().getHeight()));
+    stripper.addRegion("operations",
+        new Rectangle(0, 220, (int) firstPage.getBBox().getWidth(), 225));
   }
 
   @Override
@@ -73,25 +68,20 @@ public class SinacorPdfBoxPdfReader implements PdfReader {
       String headerText = stripper.getTextForRegion("header");
 
       Pattern headerPattern =
-          Pattern.compile(
-              "NOTA DE NEGOCIAÇÃO"
-                  + "\\n.*"
-                  + "\\n(\\d+).+(\\d{2}/\\d{2}/\\d{4})\n"
-                  + // número da nota e data
-                  "(.+)\n"
-                  + // nome da corretora
-                  ".*",
-              Pattern.MULTILINE);
+          Pattern.compile("NOTA DE NEGOCIAÇÃO" + "\\n.*" + "\\n(\\d+).+(\\d{2}/\\d{2}/\\d{4})\n" + // número
+                                                                                                   // da
+                                                                                                   // nota
+                                                                                                   // e
+                                                                                                   // data
+              "(.+)\n" + // nome da corretora
+              ".*", Pattern.MULTILINE);
       Matcher matcher = headerPattern.matcher(headerText);
       if (!matcher.find()) {
         throw new BrokerageNoteReadError("Could not find header");
       }
 
-      header =
-          new NoteHeader(
-              matcher.group(3),
-              matcher.group(1),
-              LocalDate.parse(matcher.group(2), sinacorDateFormat));
+      header = new NoteHeader(matcher.group(3), matcher.group(1),
+          LocalDate.parse(matcher.group(2), sinacorDateFormat));
     }
 
     return header;
@@ -106,19 +96,16 @@ public class SinacorPdfBoxPdfReader implements PdfReader {
         throw new BrokerageNoteReadError(e.getMessage());
       }
       String opsText = stripper.getTextForRegion("operations");
-      Pattern pattern =
-          Pattern.compile("(.+?)\\s(C|D)\\s(VISTA|FRACIONARIO)\\s(.+)\\s(\\d+)\\s([0-9,]+)\\s.*");
+      Pattern pattern = Pattern.compile(
+          "(.+?)\\s(C|D)\\s(VISTA|FRACIONARIO)\\s(.+?)(?:\\s#)?\\s(\\d+)\\s([0-9,]+)\\s.*");
       Matcher match = pattern.matcher(opsText);
       operations = new ArrayList<>();
       parseTotals();
       while (match.find()) {
         Operation op =
-            new Operation(
-                match.group(2).matches("[cC]") ? OperationType.BUY : OperationType.SELL,
-                match.group(4),
-                Integer.parseInt(match.group(5)),
-                Utils.toNumber(match.group(6)),
-                parseTotals());
+            new Operation(match.group(2).matches("[cC]") ? OperationType.BUY : OperationType.SELL,
+                match.group(4).replaceAll("\s+", " "), Integer.parseInt(match.group(5)),
+                Utils.toNumber(match.group(6)), parseTotals());
 
         operations.add(op);
       }
@@ -137,20 +124,16 @@ public class SinacorPdfBoxPdfReader implements PdfReader {
       }
       String footerText = stripper.getTextForRegion("footer");
 
-      Pattern pattern =
-          Pattern.compile(
-              "Resumo\\sFinanceiro\\n(?:.*\\n){2}Taxa\\sde\\sliquidação\\s(.+)\\sD\\n(?:.*\\n){5}Emolumentos\\s(.+)\\sD\\n(?:.*\\n){10}Líquido\\spara\\s.+?\\s(.+)\\sD\\n(.*\\n?)*",
-              Pattern.MULTILINE);
+      Pattern pattern = Pattern.compile(
+          "Resumo\\sFinanceiro\\n(?:.*\\n){2}Taxa\\sde\\sliquidação\\s(.+)\\sD\\n(?:.*\\n){5}Emolumentos\\s(.+)\\sD\\n(?:.*\\n){10}Líquido\\spara\\s.+?\\s(.+)\\sD\\n(.*\\n?)*",
+          Pattern.MULTILINE);
       Matcher matcher = pattern.matcher(footerText);
       if (!matcher.find()) {
         throw new BrokerageNoteReadError("Could not find footer");
       }
 
-      totals =
-          new NoteTotals(
-              Utils.toNumber(matcher.group(3)),
-              Utils.toNumber(matcher.group(1)),
-              Utils.toNumber(matcher.group(2)));
+      totals = new NoteTotals(Utils.toNumber(matcher.group(3)), Utils.toNumber(matcher.group(1)),
+          Utils.toNumber(matcher.group(2)));
     }
 
     return totals;

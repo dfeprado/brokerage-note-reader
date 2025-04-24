@@ -1,21 +1,20 @@
 package dev.dfeprado.tool.domain;
 
-import dev.dfeprado.tool.exceptions.BrokerageNoteReadError;
 import java.time.LocalDate;
 import java.util.List;
 
 public interface BrokerageNote {
-  LocalDate getDate() throws BrokerageNoteReadError;
+  LocalDate getDate();
 
-  String getBrokerName() throws BrokerageNoteReadError;
+  String getBrokerName();
 
-  String getNumber() throws BrokerageNoteReadError;
+  String getNumber();
 
-  List<Operation> getOps() throws BrokerageNoteReadError;
+  List<Operation> getOps();
 
-  double getTotalAmount() throws BrokerageNoteReadError;
+  double getTotalAmount();
 
-  double getFee() throws BrokerageNoteReadError;
+  double getFee();
 
-  double getEmoluments() throws BrokerageNoteReadError;
+  double getEmoluments();
 }

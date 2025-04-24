@@ -78,7 +78,7 @@ class SinacorPdfBoxPdfReaderTest {
         new SinacorPdfBoxPdfReader(resourcesUtil.getSinacorBrokerageNoteResourceFile())) {
       List<Operation> ops = reader.parseOperations();
       Operation op = ops.get(0);
-      assertTrue(op.getShareName().startsWith("BRASIL"));
+      assertEquals("BRASIL ON NM", op.getShareName());
       assertEquals(16, op.getQuantity());
       assertEquals(28.44, op.getPrice());
       assertEquals(28.44 * 16, op.getTotal());

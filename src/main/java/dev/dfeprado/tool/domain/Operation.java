@@ -7,8 +7,8 @@ public class Operation {
   private final double price;
   private final NoteTotals totals;
 
-  public Operation(
-      OperationType type, String shareName, double quantity, double price, NoteTotals totals) {
+  public Operation(OperationType type, String shareName, double quantity, double price,
+      NoteTotals totals) {
     this.type = type;
     this.shareName = shareName;
     this.quantity = quantity;
