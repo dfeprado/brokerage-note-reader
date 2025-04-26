@@ -1,4 +1,3 @@
-src/test/resources/sinacor_brokerage_note.pdf
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
