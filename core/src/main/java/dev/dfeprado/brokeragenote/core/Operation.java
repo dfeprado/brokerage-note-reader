@@ -3,7 +3,7 @@ package dev.dfeprado.brokeragenote.core;
 public class Operation {
   private final OperationType type;
   private final String shareName;
-  private final double quantity;
+  private double quantity;
   private final double price;
   private final NoteTotals totals;
 
@@ -17,7 +17,11 @@ public class Operation {
   }
 
   public double getTotalIncludingFeesAndEmoluments() {
-    return getTotal() + getFee() + getEmoluments();
+    if (isBuy()) {
+      return getTotal() + getFee() + getEmoluments();
+    } else {
+      return getTotal() - (getFee() + getEmoluments());
+    }
   }
 
   public double getFee() {
@@ -26,6 +30,16 @@ public class Operation {
 
   public double getEmoluments() {
     return totals.emoluments() * getTotal() / totals.total();
+  }
+
+  public double getIrrf() {
+    if (isBuy()) {
+      return 0.0;
+    }
+
+    double value = totals.irrf() * getTotal() / totals.irrfBase();
+
+    return value;
   }
 
   public double getTotal() {
@@ -44,7 +58,22 @@ public class Operation {
     return quantity;
   }
 
+  public void addQuantity(double quantity) {
+    if (quantity < 0) {
+      throw new IllegalArgumentException("Quantity cannot be less than zero.");
+    }
+    this.quantity += quantity;
+  }
+
   public double getPrice() {
     return price;
   }
+
+  @Override
+  public String toString() {
+    return "Operation [type=" + type + ", shareName=" + shareName + ", quantity=" + quantity
+        + ", price=" + price + ", totals=" + totals + "]";
+  }
+
+
 }

@@ -33,7 +33,10 @@ public class StatusInvestOutputTest {
           new ShareSymbol("ITSA4", InvestmentCategory.ACAO), "SANEPAR ON N2",
           new ShareSymbol("SAPR3", InvestmentCategory.ACAO), "TAESA ON N2",
           new ShareSymbol("TAEE3", InvestmentCategory.ACAO), "VALE ON NM",
-          new ShareSymbol("VALE3", InvestmentCategory.ACAO));
+          new ShareSymbol("VALE3", InvestmentCategory.ACAO), "FII VINCI LG VILG11 CI ER",
+          new ShareSymbol("VILG11", InvestmentCategory.FII), "FII HGLG PAX HGLG11 CI ER",
+          new ShareSymbol("HGLG11", InvestmentCategory.FII), "FII MAXI REN MXRF11 CI ER",
+          new ShareSymbol("MXRF11", InvestmentCategory.FII));
 
   @Test
   public void testCsvOutput() throws BrokerageNoteReadError, URISyntaxException, IOException {
@@ -46,15 +49,11 @@ public class StatusInvestOutputTest {
             Data operação;Categoria;Código Ativo;Operação C/V;Quantidade;Preço unitário;Corretora;Corretagem;Taxas;Impostos;IRRF\r
             03/04/2025;Ações;BBAS3;C;16;28,44;RICO INVESTIMENTOS;0,00;0,14;0,00;0,00\r
             03/04/2025;Ações;CVCB3;C;14;2,16;RICO INVESTIMENTOS;0,00;0,01;0,00;0,00\r
-            03/04/2025;Ações;GGBR3;C;22;15,55;RICO INVESTIMENTOS;0,00;0,10;0,00;0,00\r
-            03/04/2025;Ações;GGBR3;C;47;15,55;RICO INVESTIMENTOS;0,00;0,22;0,00;0,00\r
-            03/04/2025;Ações;GGBR3;C;3;15,55;RICO INVESTIMENTOS;0,00;0,01;0,00;0,00\r
-            03/04/2025;Ações;ITSA4;C;100;9,67;RICO INVESTIMENTOS;0,00;0,29;0,00;0,00\r
-            03/04/2025;Ações;ITSA4;C;11;9,67;RICO INVESTIMENTOS;0,00;0,03;0,00;0,00\r
+            03/04/2025;Ações;GGBR3;C;72;15,55;RICO INVESTIMENTOS;0,00;0,33;0,00;0,00\r
+            03/04/2025;Ações;ITSA4;C;111;9,67;RICO INVESTIMENTOS;0,00;0,32;0,00;0,00\r
             03/04/2025;Ações;SAPR3;C;300;5,70;RICO INVESTIMENTOS;0,00;0,51;0,00;0,00\r
             03/04/2025;Ações;SAPR3;C;37;5,71;RICO INVESTIMENTOS;0,00;0,06;0,00;0,00\r
-            03/04/2025;Ações;TAEE3;C;17;11,43;RICO INVESTIMENTOS;0,00;0,06;0,00;0,00\r
-            03/04/2025;Ações;TAEE3;C;70;11,43;RICO INVESTIMENTOS;0,00;0,24;0,00;0,00\r
+            03/04/2025;Ações;TAEE3;C;87;11,43;RICO INVESTIMENTOS;0,00;0,30;0,00;0,00\r
             03/04/2025;Ações;VALE3;C;20;55,43;RICO INVESTIMENTOS;0,00;0,33;0,00;0,00\r
             """;
 
@@ -87,8 +86,9 @@ public class StatusInvestOutputTest {
       assertEquals("RICO INVESTIMENTOS", row.getCell(6).getStringCellValue());
       assertEquals(ops.get(opIdx).getFee() + ops.get(opIdx).getEmoluments(),
           row.getCell(8).getNumericCellValue());
+      assertEquals(0.0, row.getCell(10).getNumericCellValue());
 
-      rowIdx = 7;
+      rowIdx = 4;
       opIdx = rowIdx - 1;
       row = sheet.getRow(rowIdx);
       assertNotNull(row);
@@ -99,6 +99,51 @@ public class StatusInvestOutputTest {
       assertEquals("RICO INVESTIMENTOS", row.getCell(6).getStringCellValue());
       assertEquals(ops.get(opIdx).getFee() + ops.get(opIdx).getEmoluments(),
           row.getCell(8).getNumericCellValue());
+      assertEquals(0.0, row.getCell(10).getNumericCellValue());
+    }
+  }
+
+  @Test
+  public void testXlsxFileOutputFromMultiplePagesAndOperationTypesNote()
+      throws BrokerageNoteReadError, URISyntaxException, IOException {
+    BrokerageNote note = SinacorBrokerageNote
+        .readPdf(resources.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2));
+
+    var statusinvest = new StatusInvestOutput(note, shareMap, brokerMap);
+    File testFile = new File("/tmp/test.xlsx");
+    FileOutputStream output = new FileOutputStream(testFile);
+    statusinvest.writeToXslx(output);
+
+    try (InputStream testStream = new FileInputStream(testFile)) {
+      var ops = note.getOps();
+      Workbook wb = WorkbookFactory.create(testStream);
+      Sheet sheet = wb.getSheetAt(0);
+
+      int rowIdx = 1;
+      int opIdx = rowIdx - 1;
+      Row row = sheet.getRow(rowIdx);
+      assertNotNull(row);
+      assertEquals(note.getDate(), LocalDate
+          .ofInstant(row.getCell(0).getDateCellValue().toInstant(), ZoneId.systemDefault()));
+      assertEquals("HGLG11", row.getCell(2).getStringCellValue());
+      assertEquals(ops.get(opIdx).getPrice(), row.getCell(5).getNumericCellValue());
+      assertEquals("RICO INVESTIMENTOS", row.getCell(6).getStringCellValue());
+      assertEquals(ops.get(opIdx).getFee() + ops.get(opIdx).getEmoluments(),
+          row.getCell(8).getNumericCellValue());
+      assertEquals(0.0, row.getCell(10).getNumericCellValue());
+
+      rowIdx = 6;
+      opIdx = rowIdx - 1;
+      row = sheet.getRow(rowIdx);
+      assertNotNull(row);
+      assertEquals(note.getDate(), LocalDate
+          .ofInstant(row.getCell(0).getDateCellValue().toInstant(), ZoneId.systemDefault()));
+      assertEquals("VILG11", row.getCell(2).getStringCellValue());
+      assertEquals(ops.get(opIdx).getPrice(), row.getCell(5).getNumericCellValue());
+      assertEquals("RICO INVESTIMENTOS", row.getCell(6).getStringCellValue());
+      assertEquals(ops.get(opIdx).getFee() + ops.get(opIdx).getEmoluments(),
+          row.getCell(8).getNumericCellValue());
+      assertEquals(ops.get(opIdx).getIrrf(), row.getCell(10).getNumericCellValue());
     }
   }
 }

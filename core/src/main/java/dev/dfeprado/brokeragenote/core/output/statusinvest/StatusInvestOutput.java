@@ -82,7 +82,7 @@ public class StatusInvestOutput {
         row.createCell(cellIdx++).setCellValue(0.0);
         row.createCell(cellIdx++).setCellValue(getOperationFees(op));
         row.createCell(cellIdx++).setCellValue(0.0);
-        row.createCell(cellIdx++).setCellValue(0.0);
+        row.createCell(cellIdx).setCellValue(op.getIrrf());
       }
 
       wb.write(output);

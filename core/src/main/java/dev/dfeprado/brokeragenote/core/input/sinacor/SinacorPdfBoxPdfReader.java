@@ -5,9 +5,9 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.pdfbox.Loader;
@@ -88,34 +88,49 @@ class SinacorPdfBoxPdfReader implements NoteReader {
   @Override
   public List<Operation> parseOperations() throws BrokerageNoteReadError {
     if (operations == null) {
-      try {
-        stripper.extractRegions(doc.getPage(0));
-      } catch (IOException e) {
-        throw new BrokerageNoteReadError(e.getMessage());
-      }
-      String opsText = stripper.getTextForRegion("operations");
-      // 1 = NOT USED
-      // 2 = Operation type (C/V)
-      // 3 = Market type (VISTA/FRACIONARIO)
-      // 4 = share name
-      // 5 = quantity
-      // 6 = price
-      Pattern pattern = Pattern.compile(
-          "(.+?)\\s(C|D)\\s(VISTA|FRACIONARIO)\\s(.+?)(?:\\s#)?\\s(\\d+)\\s([0-9,]+)\\s.*");
-      Matcher match = pattern.matcher(opsText);
-      operations = new ArrayList<>();
-      parseTotals();
-      while (match.find()) {
-        Operation op =
-            new Operation(match.group(2).matches("[cC]") ? OperationType.BUY : OperationType.SELL,
-                match.group(4).replaceAll("\s+", " "), Integer.parseInt(match.group(5)),
-                Utils.toNumber(match.group(6)), parseTotals());
+      // I use a Map so I can group operations of a share with the same price together,
+      // reducing the number of total operations.
+      Map<String, Operation> operationGroupedByPrice = new LinkedHashMap<>();
+      for (int page = 0; page < doc.getNumberOfPages(); page++) {
+        try {
+          stripper.extractRegions(doc.getPage(page));
+        } catch (IOException e) {
+          throw new BrokerageNoteReadError(e.getMessage());
+        }
+        String opsText = stripper.getTextForRegion("operations");
+        // System.out.println(opsText);
+        // 1 = NOT USED
+        // 2 = Operation type (C/V)
+        // 3 = Market type (VISTA/FRACIONARIO)
+        // 4 = share name
+        // 5 = quantity
+        // 6 = price
+        Pattern pattern = Pattern.compile(
+            "(.+?)\\s(C|V)\\s(VISTA|FRACIONARIO)\\s(.+?)(?:\\s#)?\\s(\\d+)\\s([0-9,]+)\\s.*");
+        Matcher match = pattern.matcher(opsText);
+        parseTotals();
+        while (match.find()) {
+          var price = Utils.toNumber(match.group(6));
+          var shareName = match.group(4).replaceAll("\s+", " ");
+          // I use the sharename + it's price (removing decimal places)
+          // as the key to the map
+          var operationKey = shareName + (int) (price * 100);
+          var quantity = Integer.parseInt(match.group(5));
 
-        operations.add(op);
+          if (operationGroupedByPrice.containsKey(operationKey)) {
+            operationGroupedByPrice.get(operationKey).addQuantity(quantity);
+          } else {
+            operationGroupedByPrice.put(operationKey,
+                new Operation(
+                    match.group(2).matches("[cC]") ? OperationType.BUY : OperationType.SELL,
+                    shareName, quantity, price, parseTotals()));
+          }
+        }
       }
+      operations = List.copyOf(operationGroupedByPrice.values());
     }
 
-    return Collections.unmodifiableList(operations);
+    return operations;
   }
 
   public NoteTotals parseTotals() throws BrokerageNoteReadError {
@@ -127,20 +142,24 @@ class SinacorPdfBoxPdfReader implements NoteReader {
         throw new BrokerageNoteReadError(e.getMessage());
       }
       String footerText = stripper.getTextForRegion("footer");
+      // System.out.println(footerText);
 
       // 1 = fees
       // 2 = emoluments
-      // 3 = total (including fees and emoluments)
+      // 3 = Base IRRF
+      // 4 = IRRF
+      // 5 = total (including fees and emoluments)
       Pattern pattern = Pattern.compile(
-          "Resumo\\sFinanceiro\\n(?:.*\\n){2}Taxa\\sde\\sliquidação\\s(.+)\\sD\\n(?:.*\\n){5}Emolumentos\\s(.+)\\sD\\n(?:.*\\n){10}Líquido\\spara\\s.+?\\s(.+)\\sD\\n(.*\\n?)*",
+          "Resumo\\sFinanceiro\\n(?:.*\\n){2}Taxa\\sde\\sliquidação\\s(.+)\\sD\\n(?:.*\\n){5}Emolumentos\\s(.+)\\sD\\n(?:.*\\n){7}I.R.R.F.\\ss\\/\\soperações,\\sbase\\sR\\$([0-9.,]+)\\s([0-9.,]+)\\n(?:.*\\n){2}Líquido\\spara\\s.+?\\s(.+)\\sD",
           Pattern.MULTILINE);
       Matcher matcher = pattern.matcher(footerText);
       if (!matcher.find()) {
         throw new BrokerageNoteReadError("Could not find footer");
       }
 
-      totals = new NoteTotals(Utils.toNumber(matcher.group(3)), Utils.toNumber(matcher.group(1)),
-          Utils.toNumber(matcher.group(2)));
+      totals = new NoteTotals(Utils.toNumber(matcher.group(5)), Utils.toNumber(matcher.group(1)),
+          Utils.toNumber(matcher.group(2)), Utils.toNumber(matcher.group(3)),
+          Utils.toNumber(matcher.group(4)));
     }
 
     return totals;

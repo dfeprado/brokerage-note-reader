@@ -4,7 +4,14 @@ import java.io.File;
 import java.net.URISyntaxException;
 
 public class ResourcesUtil {
+  public static final String NOTE_SAMPLE_1 = "sinacor_brokerage_note.pdf";
+  public static final String NOTE_SAMPLE_2 = "sinacor_brokerage_note_2.pdf";
+
   public File getSinacorBrokerageNoteResourceFile() throws URISyntaxException {
-    return new File(getClass().getResource("/sinacor_brokerage_note.pdf").toURI());
+    return getSinacorBrokerageNoteResourceFile(NOTE_SAMPLE_1);
+  }
+
+  public File getSinacorBrokerageNoteResourceFile(String fileName) throws URISyntaxException {
+    return new File(getClass().getResource("/" + fileName).toURI());
   }
 }
