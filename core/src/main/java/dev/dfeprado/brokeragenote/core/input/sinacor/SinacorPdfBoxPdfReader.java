@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
 import org.apache.pdfbox.text.PDFTextStripperByArea;
 import dev.dfeprado.brokeragenote.core.NoteHeader;
 import dev.dfeprado.brokeragenote.core.NoteReader;
@@ -21,24 +22,31 @@ import dev.dfeprado.brokeragenote.core.Operation;
 import dev.dfeprado.brokeragenote.core.OperationType;
 import dev.dfeprado.brokeragenote.core.Utils;
 import dev.dfeprado.brokeragenote.core.exceptions.BrokerageNoteReadError;
+import dev.dfeprado.brokeragenote.core.exceptions.ProtectedBrokerageNoteError;
 
 class SinacorPdfBoxPdfReader implements NoteReader {
   private static final DateTimeFormatter sinacorDateFormat = DateTimeFormatter.ofPattern("d/M/y");
   private final PDDocument doc;
-  private final PDFTextStripperByArea stripper;
+  private PDFTextStripperByArea stripper;
   private NoteHeader header;
   private NoteTotals totals;
   private List<Operation> operations;
 
   public SinacorPdfBoxPdfReader(File file) throws BrokerageNoteReadError {
+    this(file, "");
+  }
+
+  public SinacorPdfBoxPdfReader(File file, String password) throws BrokerageNoteReadError {
     try {
-      this.doc = Loader.loadPDF(file);
+      this.doc = Loader.loadPDF(file, password);
+    } catch (InvalidPasswordException e) {
+      throw new ProtectedBrokerageNoteError(e.getMessage());
     } catch (IOException e) {
       throw new BrokerageNoteReadError(e.getMessage());
     }
-    PDPage firstPage = doc.getPage(0);
 
     // prepare regions
+    PDPage firstPage = doc.getPage(0);
     try {
       stripper = new PDFTextStripperByArea();
     } catch (IOException e) {

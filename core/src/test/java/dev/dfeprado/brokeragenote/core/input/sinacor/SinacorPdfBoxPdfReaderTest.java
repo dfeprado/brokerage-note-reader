@@ -2,6 +2,7 @@ package dev.dfeprado.brokeragenote.core.input.sinacor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.File;
 import java.net.URISyntaxException;
@@ -18,6 +19,7 @@ import dev.dfeprado.brokeragenote.core.NoteTotals;
 import dev.dfeprado.brokeragenote.core.Operation;
 import dev.dfeprado.brokeragenote.core.ResourcesUtil;
 import dev.dfeprado.brokeragenote.core.exceptions.BrokerageNoteReadError;
+import dev.dfeprado.brokeragenote.core.exceptions.ProtectedBrokerageNoteError;
 
 class SinacorPdfBoxPdfReaderTest {
   private final ResourcesUtil resourcesUtil = new ResourcesUtil();
@@ -190,6 +192,24 @@ class SinacorPdfBoxPdfReaderTest {
       assertTrue(areEquals(expectedTotal - weigth * (totals.fee() + totals.emoluments()),
           op.getTotalIncludingFeesAndEmoluments()));
     }
+  }
+
+  @Test
+  void openPasswordProtectedFile() throws BrokerageNoteReadError, URISyntaxException, Exception {
+    try (NoteReader reader =
+        new SinacorPdfBoxPdfReader(resourcesUtil.getSinacorBrokerageNoteResourceFile(
+            ResourcesUtil.PROTECTED_NOTE_SAMPLE_1_123_PASSWORD), "123")) {
+    }
+  }
+
+  @Test
+  void shouldFailWhenPasswordProtectedFile() {
+    assertThrows(ProtectedBrokerageNoteError.class, () -> {
+      try (NoteReader reader =
+          new SinacorPdfBoxPdfReader(resourcesUtil.getSinacorBrokerageNoteResourceFile(
+              ResourcesUtil.PROTECTED_NOTE_SAMPLE_1_123_PASSWORD))) {
+      }
+    });
   }
 
   static boolean areEquals(double x, double y) {

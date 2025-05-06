@@ -5,9 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Map;
@@ -18,7 +16,6 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.junit.jupiter.api.Test;
 import dev.dfeprado.brokeragenote.core.BrokerageNote;
 import dev.dfeprado.brokeragenote.core.ResourcesUtil;
-import dev.dfeprado.brokeragenote.core.exceptions.BrokerageNoteReadError;
 import dev.dfeprado.brokeragenote.core.input.sinacor.SinacorBrokerageNote;
 
 public class StatusInvestOutputTest {
@@ -39,9 +36,9 @@ public class StatusInvestOutputTest {
           new ShareSymbol("MXRF11", InvestmentCategory.FII));
 
   @Test
-  public void testCsvOutput() throws BrokerageNoteReadError, URISyntaxException, IOException {
+  public void testCsvOutput() throws Exception {
     BrokerageNote note =
-        SinacorBrokerageNote.readPdf(resources.getSinacorBrokerageNoteResourceFile());
+        SinacorBrokerageNote.readPdf(resources.getSinacorBrokerageNoteResourceFile(), "");
 
     var statusinvest = new StatusInvestOutput(note, shareMap, brokerMap);
     String expectedOutput =
@@ -61,9 +58,9 @@ public class StatusInvestOutputTest {
   }
 
   @Test
-  public void testXlsxFileOutput() throws BrokerageNoteReadError, URISyntaxException, IOException {
+  public void testXlsxFileOutput() throws Exception {
     BrokerageNote note =
-        SinacorBrokerageNote.readPdf(resources.getSinacorBrokerageNoteResourceFile());
+        SinacorBrokerageNote.readPdf(resources.getSinacorBrokerageNoteResourceFile(), "");
 
     var statusinvest = new StatusInvestOutput(note, shareMap, brokerMap);
     File testFile = new File("/tmp/test.xlsx");
@@ -104,10 +101,9 @@ public class StatusInvestOutputTest {
   }
 
   @Test
-  public void testXlsxFileOutputFromMultiplePagesAndOperationTypesNote()
-      throws BrokerageNoteReadError, URISyntaxException, IOException {
+  public void testXlsxFileOutputFromMultiplePagesAndOperationTypesNote() throws Exception {
     BrokerageNote note = SinacorBrokerageNote
-        .readPdf(resources.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2));
+        .readPdf(resources.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2), "");
 
     var statusinvest = new StatusInvestOutput(note, shareMap, brokerMap);
     File testFile = new File("/tmp/test.xlsx");

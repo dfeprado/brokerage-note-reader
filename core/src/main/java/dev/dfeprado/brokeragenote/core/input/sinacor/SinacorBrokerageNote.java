@@ -14,11 +14,10 @@ import dev.dfeprado.brokeragenote.core.Operation;
 import dev.dfeprado.brokeragenote.core.exceptions.BrokerageNoteReadError;
 
 public class SinacorBrokerageNote implements BrokerageNote {
-  public static SinacorBrokerageNote readPdf(File brokerageNoteFile) throws BrokerageNoteReadError {
-    try (NoteReader reader = new SinacorPdfBoxPdfReader(brokerageNoteFile)) {
+  public static SinacorBrokerageNote readPdf(File brokerageNoteFile, String password)
+      throws Exception {
+    try (NoteReader reader = new SinacorPdfBoxPdfReader(brokerageNoteFile, password)) {
       return new SinacorBrokerageNote(reader);
-    } catch (Exception e) {
-      throw new BrokerageNoteReadError(e.getMessage());
     }
   }
 

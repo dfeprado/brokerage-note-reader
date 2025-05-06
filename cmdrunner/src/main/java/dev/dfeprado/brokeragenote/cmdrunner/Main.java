@@ -1,6 +1,5 @@
 package dev.dfeprado.brokeragenote.cmdrunner;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -10,15 +9,14 @@ import java.util.stream.Collectors;
 import com.beust.jcommander.JCommander;
 import dev.dfeprado.brokeragenote.core.BrokerageNote;
 import dev.dfeprado.brokeragenote.core.Operation;
-import dev.dfeprado.brokeragenote.core.exceptions.BrokerageNoteReadError;
+import dev.dfeprado.brokeragenote.core.exceptions.ProtectedBrokerageNoteError;
 import dev.dfeprado.brokeragenote.core.output.statusinvest.InvestmentCategory;
 import dev.dfeprado.brokeragenote.core.output.statusinvest.ShareSymbol;
 
 public class Main {
   private static Scanner scanner = new Scanner(System.in);
 
-  public static void main(String[] args)
-      throws BrokerageNoteReadError, FileNotFoundException, IOException {
+  public static void main(String[] args) throws Exception {
     // parses the arguments
     var arguments = new Arguments();
     var jcmd = JCommander.newBuilder().addObject(arguments).build();
@@ -30,7 +28,22 @@ public class Main {
 
     // Reads the note
     System.out.println("Reading the note...");
-    BrokerageNote note = InputReader.read(arguments);
+    BrokerageNote note;
+    String password = "";
+    while (true) {
+      try {
+        note = InputReader.read(arguments, password);
+        break;
+      } catch (ProtectedBrokerageNoteError e) {
+        System.out.println(e.getMessage());
+        System.out.print("Please, insert note's password: ");
+        password = scanner.nextLine();
+      } catch (Exception e) {
+        System.out.println(e instanceof ProtectedBrokerageNoteError);
+        System.out.println(e.getMessage());
+        throw e;
+      }
+    }
     System.out.println("Broker: " + note.getBrokerName());
     System.out.println("Date: " + note.getDate());
     System.out.println("Total: " + note.getFormattedTotalAmount() + " ("
