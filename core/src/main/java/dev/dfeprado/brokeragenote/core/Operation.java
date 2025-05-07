@@ -25,11 +25,11 @@ public class Operation {
   }
 
   public double getFee() {
-    return totals.fee() * getTotal() / totals.total();
+    return totals.fee() * getTotal() / totals.noteOperationTotal();
   }
 
   public double getEmoluments() {
-    return totals.emoluments() * getTotal() / totals.total();
+    return totals.emoluments() * getTotal() / totals.noteOperationTotal();
   }
 
   public double getIrrf() {

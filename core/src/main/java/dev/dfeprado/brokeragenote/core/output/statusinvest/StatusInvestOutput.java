@@ -1,24 +1,31 @@
 package dev.dfeprado.brokeragenote.core.output.statusinvest;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.NumberFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
+import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import dev.dfeprado.brokeragenote.core.BrokerageNote;
 import dev.dfeprado.brokeragenote.core.Operation;
+import dev.dfeprado.brokeragenote.core.output.OutputNote;
+import dev.dfeprado.brokeragenote.core.output.XlsxWriter;
 
-public class StatusInvestOutput {
+public class StatusInvestOutput implements XlsxWriter, OutputNote {
   private final BrokerageNote note;
   private final Map<String, ShareSymbol> shareMap;
   private final Map<String, String> brokerMap;
@@ -60,6 +67,41 @@ public class StatusInvestOutput {
 
   }
 
+  @Override
+  public void summarizeCreatedFile(File file) throws IOException {
+    try (Workbook wb = WorkbookFactory.create(file)) {
+      LocalDateTime date = null;
+      Set<String> tickers = new HashSet<String>();
+      double negociationTotal = 0.0;
+      double totalFees = 0;
+      double totalIrrf = 0;
+
+      Sheet sheet = wb.getSheetAt(0);
+      for (int i = 0; i < note.getOps().size(); i++) {
+        Row row = sheet.getRow(i + 1);
+
+        if (date == null) {
+          date = row.getCell(0).getLocalDateTimeCellValue();
+        }
+
+        tickers.add(row.getCell(2).getStringCellValue());
+        negociationTotal +=
+            row.getCell(4).getNumericCellValue() * row.getCell(5).getNumericCellValue();
+        totalFees += row.getCell(8).getNumericCellValue();
+        totalIrrf += row.getCell(10).getNumericCellValue();
+      }
+
+      System.out.println("Date: " + date.toLocalDate());
+      System.out.println("Tickers: " + tickers);
+      System.out.printf("Total operation amount: %s%n", numberFmt.format(negociationTotal));
+      System.out.printf("Total fees: %s%n", numberFmt.format(totalFees));
+      System.out.printf("Total irrf: %s%n", numberFmt.format(totalIrrf));
+    } catch (EncryptedDocumentException e) {
+      throw new IOException(e.getMessage());
+    }
+  }
+
+  @Override
   public void writeToXslx(FileOutputStream output) throws FileNotFoundException, IOException {
     try (InputStream inModel = getClass().getResourceAsStream("statusinvest_model.xlsx")) {
       Workbook wb = WorkbookFactory.create(inModel);
@@ -86,6 +128,7 @@ public class StatusInvestOutput {
       }
 
       wb.write(output);
+      wb.close();
     }
   }
 

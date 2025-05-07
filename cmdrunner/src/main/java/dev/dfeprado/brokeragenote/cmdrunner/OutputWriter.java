@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import dev.dfeprado.brokeragenote.core.BrokerageNote;
+import dev.dfeprado.brokeragenote.core.output.OutputNote;
 import dev.dfeprado.brokeragenote.core.output.statusinvest.StatusInvestOutput;
 
 public class OutputWriter {
@@ -21,10 +22,13 @@ public class OutputWriter {
     this.sharesMap = sharesMap;
   }
 
-  public void write() throws FileNotFoundException, IOException {
-    switch (args.getOutputType()) {
-      case STATUSINVEST -> new StatusInvestOutput(note, sharesMap.getMap(), brokersMap.getMap())
-          .writeToXslx(new FileOutputStream(args.getOutputFile()));
+  public OutputNote write() throws FileNotFoundException, IOException {
+    return switch (args.getOutputType()) {
+      case STATUSINVEST -> {
+        var result = new StatusInvestOutput(note, sharesMap.getMap(), brokersMap.getMap());
+        result.writeToXslx(new FileOutputStream(args.getOutputFile()));
+        yield result;
+      }
     };
   }
 }

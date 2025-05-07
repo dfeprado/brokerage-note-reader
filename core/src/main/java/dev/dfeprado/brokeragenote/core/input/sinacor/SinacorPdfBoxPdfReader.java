@@ -26,6 +26,11 @@ import dev.dfeprado.brokeragenote.core.exceptions.ProtectedBrokerageNoteError;
 
 class SinacorPdfBoxPdfReader implements NoteReader {
   private static final DateTimeFormatter sinacorDateFormat = DateTimeFormatter.ofPattern("d/M/y");
+  private static final String HEADER_REGION = "head";
+  private static final String NEGOCIATION_SUMMARY_REGION = "negSumma";
+  private static final String FINANCIAL_SUMMARY_REGION = "finSumma";
+  private static final String OPERATIONS_REGION = "ops";
+
   private final PDDocument doc;
   private PDFTextStripperByArea stripper;
   private NoteHeader header;
@@ -53,10 +58,14 @@ class SinacorPdfBoxPdfReader implements NoteReader {
       throw new BrokerageNoteReadError(e.getMessage());
     }
     stripper.setSortByPosition(true);
-    stripper.addRegion("header", new Rectangle(0, 0, (int) firstPage.getBBox().getWidth(), 90));
-    stripper.addRegion("footer", new Rectangle((int) firstPage.getBBox().getWidth() / 2, 400,
-        (int) firstPage.getBBox().getWidth(), (int) firstPage.getBBox().getHeight()));
-    stripper.addRegion("operations",
+    stripper.addRegion(HEADER_REGION,
+        new Rectangle(0, 0, (int) firstPage.getBBox().getWidth(), 90));
+    stripper.addRegion(NEGOCIATION_SUMMARY_REGION, new Rectangle(0, 400,
+        (int) firstPage.getBBox().getWidth() / 2, (int) firstPage.getBBox().getHeight()));
+    stripper.addRegion(FINANCIAL_SUMMARY_REGION,
+        new Rectangle((int) firstPage.getBBox().getWidth() / 2, 400,
+            (int) firstPage.getBBox().getWidth(), (int) firstPage.getBBox().getHeight()));
+    stripper.addRegion(OPERATIONS_REGION,
         new Rectangle(0, 220, (int) firstPage.getBBox().getWidth(), 225));
   }
 
@@ -73,7 +82,7 @@ class SinacorPdfBoxPdfReader implements NoteReader {
       } catch (IOException e) {
         throw new BrokerageNoteReadError(e.getMessage());
       }
-      String headerText = stripper.getTextForRegion("header");
+      String headerText = stripper.getTextForRegion(HEADER_REGION);
 
       // 1 = number
       // 2 = date
@@ -105,7 +114,7 @@ class SinacorPdfBoxPdfReader implements NoteReader {
         } catch (IOException e) {
           throw new BrokerageNoteReadError(e.getMessage());
         }
-        String opsText = stripper.getTextForRegion("operations");
+        String opsText = stripper.getTextForRegion(OPERATIONS_REGION);
         // System.out.println(opsText);
         // 1 = NOT USED
         // 2 = Operation type (C/V)
@@ -149,25 +158,31 @@ class SinacorPdfBoxPdfReader implements NoteReader {
       } catch (IOException e) {
         throw new BrokerageNoteReadError(e.getMessage());
       }
-      String footerText = stripper.getTextForRegion("footer");
-      // System.out.println(footerText);
 
-      // 1 = fees
-      // 2 = emoluments
-      // 3 = Base IRRF
-      // 4 = IRRF
-      // 5 = total (including fees and emoluments)
+      String financialSummaryText = stripper.getTextForRegion(FINANCIAL_SUMMARY_REGION);
       Pattern pattern = Pattern.compile(
           "Resumo\\sFinanceiro\\n(?:.*\\n){2}Taxa\\sde\\sliquidação\\s(.+)\\sD\\n(?:.*\\n){5}Emolumentos\\s(.+)\\sD\\n(?:.*\\n){7}I.R.R.F.\\ss\\/\\soperações,\\sbase\\sR\\$([0-9.,]+)\\s([0-9.,]+)\\n(?:.*\\n){2}Líquido\\spara\\s.+?\\s(.+)\\sD",
           Pattern.MULTILINE);
-      Matcher matcher = pattern.matcher(footerText);
+      Matcher matcher = pattern.matcher(financialSummaryText);
       if (!matcher.find()) {
-        throw new BrokerageNoteReadError("Could not find footer");
+        throw new BrokerageNoteReadError("Could not find financia summary region");
       }
+      var total = Utils.toNumber(matcher.group(5));
+      var fee = Utils.toNumber(matcher.group(1));
+      var emoluments = Utils.toNumber(matcher.group(2));
+      var irrfBase = Utils.toNumber(matcher.group(3));
+      var irrf = Utils.toNumber(matcher.group(4));
 
-      totals = new NoteTotals(Utils.toNumber(matcher.group(5)), Utils.toNumber(matcher.group(1)),
-          Utils.toNumber(matcher.group(2)), Utils.toNumber(matcher.group(3)),
-          Utils.toNumber(matcher.group(4)));
+      String negociationSummaryText = stripper.getTextForRegion(NEGOCIATION_SUMMARY_REGION);
+      pattern = Pattern.compile("Valor\\sdas\\soperações\\s([0-9,.]+)\\n");
+      matcher = pattern.matcher(negociationSummaryText);
+      if (!matcher.find()) {
+        throw new BrokerageNoteReadError("Could not find negociation summary region");
+      }
+      var opAmount = Utils.toNumber(matcher.group(1));
+
+
+      totals = new NoteTotals(total, fee, emoluments, irrfBase, irrf, opAmount);
     }
 
     return totals;

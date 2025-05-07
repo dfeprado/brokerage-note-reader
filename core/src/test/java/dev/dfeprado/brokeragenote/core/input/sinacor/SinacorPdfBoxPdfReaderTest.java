@@ -50,14 +50,15 @@ class SinacorPdfBoxPdfReaderTest {
     }
   }
 
-  static List<Arguments> footerTestArgs =
-      Arrays.asList(Arguments.of(ResourcesUtil.NOTE_SAMPLE_1, 6_704.53, 1.67, 0.33, 0.0, 0.0),
-          Arguments.of(ResourcesUtil.NOTE_SAMPLE_2, 7_972.45, 5.05, 1.01, 6_119.49, 0.30));
+  static List<Arguments> footerTestArgs = Arrays.asList(
+      Arguments.of(ResourcesUtil.NOTE_SAMPLE_1, 6_704.53, 1.67, 0.33, 0.0, 0.0, 6_702.53),
+      Arguments.of(ResourcesUtil.NOTE_SAMPLE_2, 7_972.45, 5.05, 1.01, 6_119.49, 0.30, 20_205.37));
 
   @ParameterizedTest
   @FieldSource("footerTestArgs")
   void canReadFooter(String noteFileName, double expectedTotal, double expectedFee,
-      double expectedEmoluments, double expectedIrrfBase, double expectedIrrf) throws Exception {
+      double expectedEmoluments, double expectedIrrfBase, double expectedIrrf,
+      double expectedOpAmount) throws Exception {
     try (SinacorPdfBoxPdfReader reader = new SinacorPdfBoxPdfReader(
         resourcesUtil.getSinacorBrokerageNoteResourceFile(noteFileName))) {
       NoteTotals totals = reader.parseTotals();
@@ -66,6 +67,7 @@ class SinacorPdfBoxPdfReaderTest {
       assertEquals(expectedEmoluments, totals.emoluments());
       assertEquals(expectedIrrfBase, totals.irrfBase());
       assertEquals(expectedIrrf, totals.irrf());
+      assertEquals(expectedOpAmount, totals.noteOperationTotal());
     }
   }
 
@@ -124,7 +126,7 @@ class SinacorPdfBoxPdfReaderTest {
   }
 
   @Test
-  void totalIncludingFeesAndEmolumentsWhenOpIsBuy()
+  void totalFeesAndEmolumentsForABuyOperation()
       throws BrokerageNoteReadError, URISyntaxException, Exception {
     try (NoteReader reader = new SinacorPdfBoxPdfReader(
         resourcesUtil.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2))) {
@@ -139,28 +141,27 @@ class SinacorPdfBoxPdfReaderTest {
       var expectedTotal = expectedQuantity * expectedPrice;
       assertEquals(expectedTotal, op.getTotal());
 
-      var totals = reader.parseTotals();
-      /*
-       * The fees and emoluments are calculated like the following formula:
-       * 
-       * x = total(x) * weight, where
-       * 
-       * - x could be "fee" or "emoluments",
-       * 
-       * - weight = quantity(op) * price(op) / totalAmount(note)
-       */
-      var weight = expectedTotal / totals.total();
-      assertTrue(areEquals(weight * totals.fee(), op.getFee()));
-      assertTrue(areEquals(weight * totals.emoluments(), op.getEmoluments()));
+      // https://www.b3.com.br/pt_br/produtos-e-servicos/tarifas/listados-a-vista-e-derivativos/renda-variavel/tarifas-de-acoes-e-fundos-de-investimento/a-vista/
+      // This is the liquidation fee, B3
+      var expectedFees = expectedTotal * 0.0250 / 100;
+      assertAlmostEquals(expectedFees, op.getFee());
 
-      // On a buy operation, the fee and emoluments should sum up with the op total
-      assertTrue(areEquals(weight * (totals.fee() + totals.emoluments()) + expectedTotal,
-          op.getTotalIncludingFeesAndEmoluments()));
+      // This is the negociation fee, B3
+      var expectedEmoluments = expectedTotal * 0.0050 / 100;
+      assertAlmostEquals(expectedEmoluments, op.getEmoluments());
+
+      // Fees and emoluments can be calculated from the
+      // operation amount, with the following formula:
+      //
+      // x = total(op) / operation_amount * total(x), where
+      // x: fee/emoluments
+      // op: the operation (like the buy of a stock)
+      // operation_amount: the total operation amount
     }
   }
 
   @Test
-  void totalIncludingFeesAndEmolumentsWhenOpIsSell()
+  void totalFeesAndEmolumentsForASellOperation()
       throws BrokerageNoteReadError, URISyntaxException, Exception {
     try (NoteReader reader = new SinacorPdfBoxPdfReader(
         resourcesUtil.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2))) {
@@ -174,23 +175,11 @@ class SinacorPdfBoxPdfReaderTest {
       var expectedTotal = expectedQuantity * expectedPrice;
       assertEquals(expectedTotal, op.getTotal());
 
-      var totals = reader.parseTotals();
-      /*
-       * The fees and emoluments are calculated like the following formula:
-       * 
-       * x = total(x) * weight, where
-       * 
-       * - x could be "fee" or "emoluments",
-       * 
-       * - weight = quantity(op) * price(op) / totalAmount(note)
-       */
-      var weigth = expectedTotal / totals.total();
-      assertTrue(areEquals(weigth * totals.fee(), op.getFee()));
-      assertTrue(areEquals(weigth * totals.emoluments(), op.getEmoluments()));
+      var expectedFee = expectedTotal * 0.0250 / 100;
+      assertAlmostEquals(expectedFee, op.getFee());
 
-      // On a sell operation, the fee and emoluments should subtract down with the op total
-      assertTrue(areEquals(expectedTotal - weigth * (totals.fee() + totals.emoluments()),
-          op.getTotalIncludingFeesAndEmoluments()));
+      var expectedEmoluments = expectedTotal * 0.0050 / 100;
+      assertAlmostEquals(expectedEmoluments, op.getEmoluments());
     }
   }
 
@@ -212,6 +201,10 @@ class SinacorPdfBoxPdfReaderTest {
     });
   }
 
+  static void assertAlmostEquals(double x, double y) {
+    assertTrue(areEquals(x, y), () -> String.format("Expected %f, found %f", x, y));
+  }
+
   static boolean areEquals(double x, double y) {
     var diff = x - y;
     if (diff < 0) {
@@ -219,4 +212,5 @@ class SinacorPdfBoxPdfReaderTest {
     }
     return diff < 1e-3;
   }
+
 }

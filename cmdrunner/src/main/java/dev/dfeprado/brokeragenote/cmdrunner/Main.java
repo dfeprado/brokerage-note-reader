@@ -1,5 +1,6 @@
 package dev.dfeprado.brokeragenote.cmdrunner;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -71,7 +72,10 @@ public class Main {
 
     // Output
     System.out.println("Outputing...");
-    new OutputWriter(arguments, note, brokersMap, sharesMap).write();
+    var writer = new OutputWriter(arguments, note, brokersMap, sharesMap).write();
+
+    // Output validation
+    writer.summarizeCreatedFile(new File(arguments.getOutputFile()));
     System.out.println("Done. Have a nice day!");
 
   }

@@ -2,6 +2,7 @@ package dev.dfeprado.brokeragenote.core.output.statusinvest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -58,7 +59,7 @@ public class StatusInvestOutputTest {
   }
 
   @Test
-  public void testXlsxFileOutput() throws Exception {
+  public void textXlsxOutputForSample1() throws Exception {
     BrokerageNote note =
         SinacorBrokerageNote.readPdf(resources.getSinacorBrokerageNoteResourceFile(), "");
 
@@ -68,40 +69,47 @@ public class StatusInvestOutputTest {
     statusinvest.writeToXslx(output);
 
     try (InputStream testStream = new FileInputStream(testFile)) {
-      var ops = note.getOps();
       Workbook wb = WorkbookFactory.create(testStream);
       Sheet sheet = wb.getSheetAt(0);
 
-      int rowIdx = 1;
-      int opIdx = rowIdx - 1;
-      Row row = sheet.getRow(rowIdx);
-      assertNotNull(row);
-      assertEquals(note.getDate(), LocalDate
-          .ofInstant(row.getCell(0).getDateCellValue().toInstant(), ZoneId.systemDefault()));
-      assertEquals("BBAS3", row.getCell(2).getStringCellValue());
-      assertEquals(ops.get(opIdx).getPrice(), row.getCell(5).getNumericCellValue());
-      assertEquals("RICO INVESTIMENTOS", row.getCell(6).getStringCellValue());
-      assertEquals(ops.get(opIdx).getFee() + ops.get(opIdx).getEmoluments(),
-          row.getCell(8).getNumericCellValue());
-      assertEquals(0.0, row.getCell(10).getNumericCellValue());
+      ExpectedRow.Builder builder =
+          new ExpectedRow.Builder("RICO INVESTIMENTOS", 6_702.53, 1.67 + .33, 0.0, 0.0);
 
-      rowIdx = 4;
-      opIdx = rowIdx - 1;
-      row = sheet.getRow(rowIdx);
-      assertNotNull(row);
-      assertEquals(note.getDate(), LocalDate
-          .ofInstant(row.getCell(0).getDateCellValue().toInstant(), ZoneId.systemDefault()));
-      assertEquals("ITSA4", row.getCell(2).getStringCellValue());
-      assertEquals(ops.get(opIdx).getPrice(), row.getCell(5).getNumericCellValue());
-      assertEquals("RICO INVESTIMENTOS", row.getCell(6).getStringCellValue());
-      assertEquals(ops.get(opIdx).getFee() + ops.get(opIdx).getEmoluments(),
-          row.getCell(8).getNumericCellValue());
-      assertEquals(0.0, row.getCell(10).getNumericCellValue());
+      ExpectedRow[] expectedRows = {
+          builder.setCategoryAndOperation("Ações", 'C').setTicker("BBAS3")
+              .setQuantityAndPrice(16, 28.44).build(),
+          builder.setTicker("CVCB3").setQuantityAndPrice(14, 2.16).build(),
+          builder.setTicker("GGBR3").setQuantityAndPrice(22 + 47 + 3, 15.55).build(),
+          builder.setTicker("ITSA4").setQuantityAndPrice(111, 9.67).build(),
+          builder.setTicker("SAPR3").setQuantityAndPrice(300, 5.70).build(),
+          builder.setQuantityAndPrice(37, 5.71).build(),
+          builder.setTicker("TAEE3").setQuantityAndPrice(87, 11.43).build(),
+          builder.setTicker("VALE3").setQuantityAndPrice(20, 55.43).build()};
+
+      for (int rowIdx = 0; rowIdx < expectedRows.length; rowIdx++) {
+        int cellIdx = 0;
+        var expectedRow = expectedRows[rowIdx];
+        Row row = sheet.getRow(rowIdx + 1);
+        assertNotNull(row);
+        assertEquals(note.getDate(), LocalDate.ofInstant(
+            row.getCell(cellIdx++).getDateCellValue().toInstant(), ZoneId.systemDefault()));
+        assertEquals(expectedRow.category(), row.getCell(cellIdx++).getStringCellValue());
+        assertEquals(expectedRow.ticker(), row.getCell(cellIdx++).getStringCellValue());
+        assertEquals(expectedRow.operation(),
+            row.getCell(cellIdx++).getStringCellValue().charAt(0));
+        assertEquals(expectedRow.quantity(), (int) (row.getCell(cellIdx++).getNumericCellValue()));
+        assertEquals(expectedRow.price(), row.getCell(cellIdx++).getNumericCellValue());
+        assertEquals(expectedRow.broker(), row.getCell(cellIdx++).getStringCellValue());
+        assertEquals(0.0, row.getCell(cellIdx++).getNumericCellValue());
+        assertAlmostEquals(expectedRow.fees(), row.getCell(cellIdx++).getNumericCellValue());
+        assertAlmostEquals(expectedRow.tax(), row.getCell(cellIdx++).getNumericCellValue());
+        assertAlmostEquals(expectedRow.irrf(), row.getCell(cellIdx).getNumericCellValue());
+      }
     }
   }
 
   @Test
-  public void testXlsxFileOutputFromMultiplePagesAndOperationTypesNote() throws Exception {
+  public void testXlsxOutputForSample2() throws Exception {
     BrokerageNote note = SinacorBrokerageNote
         .readPdf(resources.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2), "");
 
@@ -110,36 +118,65 @@ public class StatusInvestOutputTest {
     FileOutputStream output = new FileOutputStream(testFile);
     statusinvest.writeToXslx(output);
 
+    ExpectedRow.Builder builder =
+        new ExpectedRow.Builder("RICO INVESTIMENTOS", 20_205.37, 6.06, 6_119.49, 0.30);
+    ExpectedRow[] expectedRows = {
+        builder.setCategoryAndOperation("FII's", 'C').setTicker("HGLG11")
+            .setQuantityAndPrice(11, 158.87).build(),
+        builder.setQuantityAndPrice(7, 158.88).build(),
+        builder.setQuantityAndPrice(3, 158.86).build(),
+        builder.setTicker("MXRF11").setQuantityAndPrice(130 + 284, 9.33).build(),
+        builder.setQuantityAndPrice(15, 9.32).build(),
+        builder.setCategoryAndOperation("FII's", 'V').setTicker("VILG11")
+            .setQuantityAndPrice(71, 86.19).build(),
+        builder.setCategoryAndOperation("Ações", 'C').setTicker("ITSA4")
+            .setQuantityAndPrice(600, 10.46).build(),
+        builder.setQuantityAndPrice(45, 10.47).build()};
+
     try (InputStream testStream = new FileInputStream(testFile)) {
-      var ops = note.getOps();
       Workbook wb = WorkbookFactory.create(testStream);
       Sheet sheet = wb.getSheetAt(0);
 
-      int rowIdx = 1;
-      int opIdx = rowIdx - 1;
-      Row row = sheet.getRow(rowIdx);
-      assertNotNull(row);
-      assertEquals(note.getDate(), LocalDate
-          .ofInstant(row.getCell(0).getDateCellValue().toInstant(), ZoneId.systemDefault()));
-      assertEquals("HGLG11", row.getCell(2).getStringCellValue());
-      assertEquals(ops.get(opIdx).getPrice(), row.getCell(5).getNumericCellValue());
-      assertEquals("RICO INVESTIMENTOS", row.getCell(6).getStringCellValue());
-      assertEquals(ops.get(opIdx).getFee() + ops.get(opIdx).getEmoluments(),
-          row.getCell(8).getNumericCellValue());
-      assertEquals(0.0, row.getCell(10).getNumericCellValue());
-
-      rowIdx = 6;
-      opIdx = rowIdx - 1;
-      row = sheet.getRow(rowIdx);
-      assertNotNull(row);
-      assertEquals(note.getDate(), LocalDate
-          .ofInstant(row.getCell(0).getDateCellValue().toInstant(), ZoneId.systemDefault()));
-      assertEquals("VILG11", row.getCell(2).getStringCellValue());
-      assertEquals(ops.get(opIdx).getPrice(), row.getCell(5).getNumericCellValue());
-      assertEquals("RICO INVESTIMENTOS", row.getCell(6).getStringCellValue());
-      assertEquals(ops.get(opIdx).getFee() + ops.get(opIdx).getEmoluments(),
-          row.getCell(8).getNumericCellValue());
-      assertEquals(ops.get(opIdx).getIrrf(), row.getCell(10).getNumericCellValue());
+      for (int rowIdx = 0; rowIdx < expectedRows.length; rowIdx++) {
+        int cellIdx = 0;
+        var expectedRow = expectedRows[rowIdx];
+        Row row = sheet.getRow(rowIdx + 1);
+        assertNotNull(row);
+        assertEquals(note.getDate(), LocalDate.ofInstant(
+            row.getCell(cellIdx++).getDateCellValue().toInstant(), ZoneId.systemDefault()));
+        assertEquals(expectedRow.category(), row.getCell(cellIdx++).getStringCellValue());
+        assertEquals(expectedRow.ticker(), row.getCell(cellIdx++).getStringCellValue());
+        assertEquals(expectedRow.operation(),
+            row.getCell(cellIdx++).getStringCellValue().charAt(0));
+        assertEquals(expectedRow.quantity(), (int) (row.getCell(cellIdx++).getNumericCellValue()));
+        assertEquals(expectedRow.price(), row.getCell(cellIdx++).getNumericCellValue());
+        assertEquals(expectedRow.broker(), row.getCell(cellIdx++).getStringCellValue());
+        assertEquals(0.0, row.getCell(cellIdx++).getNumericCellValue());
+        assertAlmostEquals(expectedRow.fees(), row.getCell(cellIdx++).getNumericCellValue());
+        assertAlmostEquals(expectedRow.tax(), row.getCell(cellIdx++).getNumericCellValue());
+        assertAlmostEquals(expectedRow.irrf(), row.getCell(cellIdx).getNumericCellValue());
+      }
     }
+  }
+
+  @Test
+  public void summarization() throws Exception {
+    BrokerageNote note = SinacorBrokerageNote
+        .readPdf(resources.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2), "");
+
+    var statusinvest = new StatusInvestOutput(note, shareMap, brokerMap);
+    File testFile = new File("/tmp/test.xlsx");
+    FileOutputStream output = new FileOutputStream(testFile);
+    statusinvest.writeToXslx(output);
+    statusinvest.summarizeCreatedFile(testFile);
+  }
+
+  static void assertAlmostEquals(double x, double y) {
+    var diff = x - y;
+    if (diff < 0) {
+      diff *= -1;
+    }
+
+    assertTrue(diff < 1e-3, () -> String.format("Expected %f, found %f", x, y));
   }
 }
