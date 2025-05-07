@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>dev.dfeprado.brokerage-note</groupId>
 	<artifactId>brokerage-note</artifactId>
-	<version>1.0-SNAPSHOT</version>
+	<version>1.0</version>
 	<packaging>pom</packaging>
 	<name>Brokerage Note</name>
 	<description>A program that reads brokerage notes and outputs them as common formats</description>
