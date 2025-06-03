@@ -1,28 +1,39 @@
-package dev.dfeprado.brokeragenote.core.input.sinacor;
+package dev.dfeprado.brokeragenote.core.input;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import java.io.File;
-import java.net.URISyntaxException;
-import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.FieldSource;
 import dev.dfeprado.brokeragenote.core.NoteHeader;
-import dev.dfeprado.brokeragenote.core.NoteReader;
 import dev.dfeprado.brokeragenote.core.NoteTotals;
 import dev.dfeprado.brokeragenote.core.Operation;
 import dev.dfeprado.brokeragenote.core.ResourcesUtil;
 import dev.dfeprado.brokeragenote.core.exceptions.BrokerageNoteReadError;
 import dev.dfeprado.brokeragenote.core.exceptions.ProtectedBrokerageNoteError;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.FieldSource;
 
-class SinacorPdfBoxPdfReaderTest {
+import java.io.File;
+import java.net.URISyntaxException;
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class SinacorReaderTest {
   private final ResourcesUtil resourcesUtil = new ResourcesUtil();
+
+  @BeforeEach
+  void setLocale() {
+    Locale.setDefault(Locale.ENGLISH);
+  }
+
+  @AfterEach
+  void restoreLocale() {
+    Locale.setDefault(Locale.getDefault());
+  }
 
   @Test
   void canReadResource() throws URISyntaxException {
@@ -32,8 +43,8 @@ class SinacorPdfBoxPdfReaderTest {
 
   @Test
   void canOpenBrokerageNote() throws Exception {
-    try (SinacorPdfBoxPdfReader reader =
-        new SinacorPdfBoxPdfReader(resourcesUtil.getSinacorBrokerageNoteResourceFile())) {
+    try (SinacorReader reader =
+        new SinacorReader(resourcesUtil.getSinacorBrokerageNoteResourceFile())) {
       // File was opened
     }
   }
@@ -41,8 +52,8 @@ class SinacorPdfBoxPdfReaderTest {
   @Test
   void canReadHeader() throws Exception {
     LocalDate expectedDate = LocalDate.parse("2025-04-03");
-    try (SinacorPdfBoxPdfReader reader =
-        new SinacorPdfBoxPdfReader(resourcesUtil.getSinacorBrokerageNoteResourceFile())) {
+    try (SinacorReader reader =
+        new SinacorReader(resourcesUtil.getSinacorBrokerageNoteResourceFile())) {
       NoteHeader header = reader.parseHeader();
       assertEquals(expectedDate, header.date());
       assertEquals("108846725", header.number());
@@ -59,7 +70,7 @@ class SinacorPdfBoxPdfReaderTest {
   void canReadFooter(String noteFileName, double expectedTotal, double expectedFee,
       double expectedEmoluments, double expectedIrrfBase, double expectedIrrf,
       double expectedOpAmount) throws Exception {
-    try (SinacorPdfBoxPdfReader reader = new SinacorPdfBoxPdfReader(
+    try (SinacorReader reader = new SinacorReader(
         resourcesUtil.getSinacorBrokerageNoteResourceFile(noteFileName))) {
       NoteTotals totals = reader.parseTotals();
       assertEquals(expectedTotal, totals.total());
@@ -77,7 +88,7 @@ class SinacorPdfBoxPdfReaderTest {
   @ParameterizedTest
   @FieldSource("canReadOpsArgs")
   void canReadOps(String noteFileName, int expectedOpsSize) throws Exception {
-    try (SinacorPdfBoxPdfReader reader = new SinacorPdfBoxPdfReader(
+    try (SinacorReader reader = new SinacorReader(
         resourcesUtil.getSinacorBrokerageNoteResourceFile(noteFileName))) {
       List<Operation> ops = reader.parseOperations();
       assertEquals(expectedOpsSize, ops.size());
@@ -98,8 +109,8 @@ class SinacorPdfBoxPdfReaderTest {
 
   @Test
   void oneOpTotals() throws Exception {
-    try (NoteReader reader =
-        new SinacorPdfBoxPdfReader(resourcesUtil.getSinacorBrokerageNoteResourceFile())) {
+    try (SinacorReader reader =
+        new SinacorReader(resourcesUtil.getSinacorBrokerageNoteResourceFile())) {
       List<Operation> ops = reader.parseOperations();
       Operation op = ops.get(0);
       assertEquals("BRASIL ON NM", op.getShareName());
@@ -115,7 +126,7 @@ class SinacorPdfBoxPdfReaderTest {
 
   @Test
   void checkIrrfCalc() throws BrokerageNoteReadError, URISyntaxException, Exception {
-    try (NoteReader reader = new SinacorPdfBoxPdfReader(
+    try (SinacorReader reader = new SinacorReader(
         resourcesUtil.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2))) {
       List<Operation> ops = reader.parseOperations();
       Operation op = ops.get(5);
@@ -128,7 +139,7 @@ class SinacorPdfBoxPdfReaderTest {
   @Test
   void totalFeesAndEmolumentsForABuyOperation()
       throws BrokerageNoteReadError, URISyntaxException, Exception {
-    try (NoteReader reader = new SinacorPdfBoxPdfReader(
+    try (SinacorReader reader = new SinacorReader(
         resourcesUtil.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2))) {
 
       List<Operation> ops = reader.parseOperations();
@@ -163,7 +174,7 @@ class SinacorPdfBoxPdfReaderTest {
   @Test
   void totalFeesAndEmolumentsForASellOperation()
       throws BrokerageNoteReadError, URISyntaxException, Exception {
-    try (NoteReader reader = new SinacorPdfBoxPdfReader(
+    try (SinacorReader reader = new SinacorReader(
         resourcesUtil.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2))) {
 
       List<Operation> ops = reader.parseOperations();
@@ -185,8 +196,8 @@ class SinacorPdfBoxPdfReaderTest {
 
   @Test
   void openPasswordProtectedFile() throws BrokerageNoteReadError, URISyntaxException, Exception {
-    try (NoteReader reader =
-        new SinacorPdfBoxPdfReader(resourcesUtil.getSinacorBrokerageNoteResourceFile(
+    try (SinacorReader reader =
+        new SinacorReader(resourcesUtil.getSinacorBrokerageNoteResourceFile(
             ResourcesUtil.PROTECTED_NOTE_SAMPLE_1_123_PASSWORD), "123")) {
     }
   }
@@ -194,8 +205,8 @@ class SinacorPdfBoxPdfReaderTest {
   @Test
   void shouldFailWhenPasswordProtectedFile() {
     assertThrows(ProtectedBrokerageNoteError.class, () -> {
-      try (NoteReader reader =
-          new SinacorPdfBoxPdfReader(resourcesUtil.getSinacorBrokerageNoteResourceFile(
+      try (SinacorReader reader =
+          new SinacorReader(resourcesUtil.getSinacorBrokerageNoteResourceFile(
               ResourcesUtil.PROTECTED_NOTE_SAMPLE_1_123_PASSWORD))) {
       }
     });

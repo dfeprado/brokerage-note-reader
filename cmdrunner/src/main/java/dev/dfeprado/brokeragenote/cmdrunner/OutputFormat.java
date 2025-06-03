@@ -1,5 +1,5 @@
 package dev.dfeprado.brokeragenote.cmdrunner;
 
-enum OutputFormat {
-  STATUSINVEST
+public enum OutputFormat {
+    SINACOR
 }

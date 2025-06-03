@@ -5,14 +5,14 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>dev.dfeprado.brokerage-note</groupId>
 	<artifactId>brokerage-note</artifactId>
-	<version>1.0-SNAPSHOT</version>
+	<version>2.0</version>
 	<packaging>pom</packaging>
 	<name>Brokerage Note</name>
 	<description>A program that reads brokerage notes and outputs them as common formats</description>
 	<url>https://github.com/dfeprado/brokerage-note-reader</url>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.release>17</maven.compiler.release>
+		<maven.compiler.release>21</maven.compiler.release>
 	</properties>
 	<dependencyManagement>
 		<dependencies>

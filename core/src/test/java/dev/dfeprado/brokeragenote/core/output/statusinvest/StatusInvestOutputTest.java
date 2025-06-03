@@ -1,8 +1,13 @@
 package dev.dfeprado.brokeragenote.core.output.statusinvest;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import dev.dfeprado.brokeragenote.core.ResourcesUtil;
+import dev.dfeprado.brokeragenote.core.input.SinacorReader;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.junit.jupiter.api.Test;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -10,14 +15,8 @@ import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Map;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.WorkbookFactory;
-import org.junit.jupiter.api.Test;
-import dev.dfeprado.brokeragenote.core.BrokerageNote;
-import dev.dfeprado.brokeragenote.core.ResourcesUtil;
-import dev.dfeprado.brokeragenote.core.input.sinacor.SinacorBrokerageNote;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class StatusInvestOutputTest {
   private ResourcesUtil resources = new ResourcesUtil();
@@ -37,31 +36,9 @@ public class StatusInvestOutputTest {
           new ShareSymbol("MXRF11", InvestmentCategory.FII));
 
   @Test
-  public void testCsvOutput() throws Exception {
-    BrokerageNote note =
-        SinacorBrokerageNote.readPdf(resources.getSinacorBrokerageNoteResourceFile(), "");
-
-    var statusinvest = new StatusInvestOutput(note, shareMap, brokerMap);
-    String expectedOutput =
-        """
-            Data operação;Categoria;Código Ativo;Operação C/V;Quantidade;Preço unitário;Corretora;Corretagem;Taxas;Impostos;IRRF\r
-            03/04/2025;Ações;BBAS3;C;16;28,44;RICO INVESTIMENTOS;0,00;0,14;0,00;0,00\r
-            03/04/2025;Ações;CVCB3;C;14;2,16;RICO INVESTIMENTOS;0,00;0,01;0,00;0,00\r
-            03/04/2025;Ações;GGBR3;C;72;15,55;RICO INVESTIMENTOS;0,00;0,33;0,00;0,00\r
-            03/04/2025;Ações;ITSA4;C;111;9,67;RICO INVESTIMENTOS;0,00;0,32;0,00;0,00\r
-            03/04/2025;Ações;SAPR3;C;300;5,70;RICO INVESTIMENTOS;0,00;0,51;0,00;0,00\r
-            03/04/2025;Ações;SAPR3;C;37;5,71;RICO INVESTIMENTOS;0,00;0,06;0,00;0,00\r
-            03/04/2025;Ações;TAEE3;C;87;11,43;RICO INVESTIMENTOS;0,00;0,30;0,00;0,00\r
-            03/04/2025;Ações;VALE3;C;20;55,43;RICO INVESTIMENTOS;0,00;0,33;0,00;0,00\r
-            """;
-
-    assertEquals(expectedOutput, statusinvest.getAsCsv());
-  }
-
-  @Test
   public void textXlsxOutputForSample1() throws Exception {
-    BrokerageNote note =
-        SinacorBrokerageNote.readPdf(resources.getSinacorBrokerageNoteResourceFile(), "");
+    SinacorReader note =
+        new SinacorReader(resources.getSinacorBrokerageNoteResourceFile(), "");
 
     var statusinvest = new StatusInvestOutput(note, shareMap, brokerMap);
     File testFile = new File("/tmp/test.xlsx");
@@ -91,7 +68,7 @@ public class StatusInvestOutputTest {
         var expectedRow = expectedRows[rowIdx];
         Row row = sheet.getRow(rowIdx + 1);
         assertNotNull(row);
-        assertEquals(note.getDate(), LocalDate.ofInstant(
+        assertEquals(note.parseHeader().date(), LocalDate.ofInstant(
             row.getCell(cellIdx++).getDateCellValue().toInstant(), ZoneId.systemDefault()));
         assertEquals(expectedRow.category(), row.getCell(cellIdx++).getStringCellValue());
         assertEquals(expectedRow.ticker(), row.getCell(cellIdx++).getStringCellValue());
@@ -110,8 +87,7 @@ public class StatusInvestOutputTest {
 
   @Test
   public void testXlsxOutputForSample2() throws Exception {
-    BrokerageNote note = SinacorBrokerageNote
-        .readPdf(resources.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2), "");
+    SinacorReader note = new SinacorReader(resources.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2), "");
 
     var statusinvest = new StatusInvestOutput(note, shareMap, brokerMap);
     File testFile = new File("/tmp/test.xlsx");
@@ -142,7 +118,7 @@ public class StatusInvestOutputTest {
         var expectedRow = expectedRows[rowIdx];
         Row row = sheet.getRow(rowIdx + 1);
         assertNotNull(row);
-        assertEquals(note.getDate(), LocalDate.ofInstant(
+        assertEquals(note.parseHeader().date(), LocalDate.ofInstant(
             row.getCell(cellIdx++).getDateCellValue().toInstant(), ZoneId.systemDefault()));
         assertEquals(expectedRow.category(), row.getCell(cellIdx++).getStringCellValue());
         assertEquals(expectedRow.ticker(), row.getCell(cellIdx++).getStringCellValue());
@@ -161,8 +137,7 @@ public class StatusInvestOutputTest {
 
   @Test
   public void summarization() throws Exception {
-    BrokerageNote note = SinacorBrokerageNote
-        .readPdf(resources.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2), "");
+    SinacorReader note = new SinacorReader(resources.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2), "");
 
     var statusinvest = new StatusInvestOutput(note, shareMap, brokerMap);
     File testFile = new File("/tmp/test.xlsx");

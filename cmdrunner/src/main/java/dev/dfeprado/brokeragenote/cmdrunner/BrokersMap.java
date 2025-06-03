@@ -7,9 +7,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class BrokersMap extends AbstractMapTemplate<String> {
-  private static int version = 1;
+  private static final int version = 1;
 
-  private OutputFormat outCtx;
+  private final OutputFormat outCtx;
   private Map<OutputFormat, Map<String, String>> map;
 
   public BrokersMap(OutputFormat outContext) throws IOException {
@@ -51,13 +51,7 @@ public class BrokersMap extends AbstractMapTemplate<String> {
   }
 
   private Map<String, String> getContext() {
-    var ctx = map.get(outCtx);
-    if (ctx == null) {
-      ctx = new HashMap<String, String>();
-      map.put(outCtx, ctx);
-    }
-
-    return ctx;
+      return map.computeIfAbsent(outCtx, k -> new HashMap<String, String>());
   }
 
   public void save() throws IOException {
