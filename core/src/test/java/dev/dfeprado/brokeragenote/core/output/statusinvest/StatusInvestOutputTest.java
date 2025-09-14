@@ -1,47 +1,50 @@
 package dev.dfeprado.brokeragenote.core.output.statusinvest;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import dev.dfeprado.brokeragenote.core.ResourcesUtil;
 import dev.dfeprado.brokeragenote.core.input.SinacorReader;
+import java.io.*;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 public class StatusInvestOutputTest {
   private ResourcesUtil resources = new ResourcesUtil();
 
   private Map<String, String> brokerMap =
       Map.of("RICO CORRETORA DE TITULOS E VALORES MOBILIARIOS S.A.", "RICO INVESTIMENTOS");
-  private Map<String, ShareSymbol> shareMap =
-      Map.of("BRASIL ON NM", new ShareSymbol("BBAS3", InvestmentCategory.ACAO), "CVC BRASIL ON NM",
-          new ShareSymbol("CVCB3", InvestmentCategory.ACAO), "GERDAU ON N1",
-          new ShareSymbol("GGBR3", InvestmentCategory.ACAO), "ITAUSA PN N1",
-          new ShareSymbol("ITSA4", InvestmentCategory.ACAO), "SANEPAR ON N2",
-          new ShareSymbol("SAPR3", InvestmentCategory.ACAO), "TAESA ON N2",
-          new ShareSymbol("TAEE3", InvestmentCategory.ACAO), "VALE ON NM",
-          new ShareSymbol("VALE3", InvestmentCategory.ACAO), "FII VINCI LG VILG11 CI ER",
-          new ShareSymbol("VILG11", InvestmentCategory.FII), "FII HGLG PAX HGLG11 CI ER",
-          new ShareSymbol("HGLG11", InvestmentCategory.FII), "FII MAXI REN MXRF11 CI ER",
-          new ShareSymbol("MXRF11", InvestmentCategory.FII));
+  private static Map<String, ShareSymbol> shareMap;
+
+  @BeforeAll
+  static void setShareMap() {
+    shareMap = new HashMap<>();
+    shareMap.put("BRASIL ON NM", new ShareSymbol("BBAS3", InvestmentCategory.ACAO));
+    shareMap.put("CVC BRASIL ON NM", new ShareSymbol("CVCB3", InvestmentCategory.ACAO));
+    shareMap.put("GERDAU ON N1", new ShareSymbol("GGBR3", InvestmentCategory.ACAO));
+    shareMap.put("ITAUSA PN N1", new ShareSymbol("ITSA4", InvestmentCategory.ACAO));
+    shareMap.put("ITAUSA PN EJ N1", new ShareSymbol("ITSA4", InvestmentCategory.ACAO));
+    shareMap.put("SANEPAR ON N2", new ShareSymbol("SAPR3", InvestmentCategory.ACAO));
+    shareMap.put("TAESA ON N2", new ShareSymbol("TAEE3", InvestmentCategory.ACAO));
+    shareMap.put("VALE ON NM", new ShareSymbol("VALE3", InvestmentCategory.ACAO));
+    shareMap.put("FII VINCI LG VILG11 CI ER", new ShareSymbol("VILG11", InvestmentCategory.FII));
+    shareMap.put("FII HGLG PAX HGLG11 CI ER", new ShareSymbol("HGLG11", InvestmentCategory.FII));
+    shareMap.put("FII MAXI REN MXRF11 CI ER", new ShareSymbol("MXRF11", InvestmentCategory.FII));
+  }
 
   @Test
   public void textXlsxOutputForSample1() throws Exception {
-    SinacorReader note =
-        new SinacorReader(resources.getSinacorBrokerageNoteResourceFile(), "");
+    SinacorReader note = new SinacorReader(resources.getSinacorBrokerageNoteResourceFile(), "");
 
     var statusinvest = new StatusInvestOutput(note, shareMap, brokerMap);
-    File testFile = new File("/tmp/test.xlsx");
+    File testFile = getTempFile();
     FileOutputStream output = new FileOutputStream(testFile);
     statusinvest.writeToXslx(output);
 
@@ -53,27 +56,33 @@ public class StatusInvestOutputTest {
           new ExpectedRow.Builder("RICO INVESTIMENTOS", 6_702.53, 1.67 + .33, 0.0, 0.0);
 
       ExpectedRow[] expectedRows = {
-          builder.setCategoryAndOperation("Ações", 'C').setTicker("BBAS3")
-              .setQuantityAndPrice(16, 28.44).build(),
-          builder.setTicker("CVCB3").setQuantityAndPrice(14, 2.16).build(),
-          builder.setTicker("GGBR3").setQuantityAndPrice(22 + 47 + 3, 15.55).build(),
-          builder.setTicker("ITSA4").setQuantityAndPrice(111, 9.67).build(),
-          builder.setTicker("SAPR3").setQuantityAndPrice(300, 5.70).build(),
-          builder.setQuantityAndPrice(37, 5.71).build(),
-          builder.setTicker("TAEE3").setQuantityAndPrice(87, 11.43).build(),
-          builder.setTicker("VALE3").setQuantityAndPrice(20, 55.43).build()};
+        builder
+            .setCategoryAndOperation("Ações", 'C')
+            .setTicker("BBAS3")
+            .setQuantityAndPrice(16, 28.44)
+            .build(),
+        builder.setTicker("CVCB3").setQuantityAndPrice(14, 2.16).build(),
+        builder.setTicker("GGBR3").setQuantityAndPrice(22 + 47 + 3, 15.55).build(),
+        builder.setTicker("ITSA4").setQuantityAndPrice(111, 9.67).build(),
+        builder.setTicker("SAPR3").setQuantityAndPrice(300, 5.70).build(),
+        builder.setQuantityAndPrice(37, 5.71).build(),
+        builder.setTicker("TAEE3").setQuantityAndPrice(87, 11.43).build(),
+        builder.setTicker("VALE3").setQuantityAndPrice(20, 55.43).build()
+      };
 
       for (int rowIdx = 0; rowIdx < expectedRows.length; rowIdx++) {
         int cellIdx = 0;
         var expectedRow = expectedRows[rowIdx];
         Row row = sheet.getRow(rowIdx + 1);
         assertNotNull(row);
-        assertEquals(note.parseHeader().date(), LocalDate.ofInstant(
-            row.getCell(cellIdx++).getDateCellValue().toInstant(), ZoneId.systemDefault()));
+        assertEquals(
+            note.parseHeader().date(),
+            LocalDate.ofInstant(
+                row.getCell(cellIdx++).getDateCellValue().toInstant(), ZoneId.systemDefault()));
         assertEquals(expectedRow.category(), row.getCell(cellIdx++).getStringCellValue());
         assertEquals(expectedRow.ticker(), row.getCell(cellIdx++).getStringCellValue());
-        assertEquals(expectedRow.operation(),
-            row.getCell(cellIdx++).getStringCellValue().charAt(0));
+        assertEquals(
+            expectedRow.operation(), row.getCell(cellIdx++).getStringCellValue().charAt(0));
         assertEquals(expectedRow.quantity(), (int) (row.getCell(cellIdx++).getNumericCellValue()));
         assertEquals(expectedRow.price(), row.getCell(cellIdx++).getNumericCellValue());
         assertEquals(expectedRow.broker(), row.getCell(cellIdx++).getStringCellValue());
@@ -87,27 +96,39 @@ public class StatusInvestOutputTest {
 
   @Test
   public void testXlsxOutputForSample2() throws Exception {
-    SinacorReader note = new SinacorReader(resources.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2), "");
+    SinacorReader note =
+        new SinacorReader(
+            resources.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2), "");
 
     var statusinvest = new StatusInvestOutput(note, shareMap, brokerMap);
-    File testFile = new File("/tmp/test.xlsx");
+    File testFile = getTempFile();
     FileOutputStream output = new FileOutputStream(testFile);
     statusinvest.writeToXslx(output);
 
     ExpectedRow.Builder builder =
         new ExpectedRow.Builder("RICO INVESTIMENTOS", 20_205.37, 6.06, 6_119.49, 0.30);
     ExpectedRow[] expectedRows = {
-        builder.setCategoryAndOperation("FII's", 'C').setTicker("HGLG11")
-            .setQuantityAndPrice(11, 158.87).build(),
-        builder.setQuantityAndPrice(7, 158.88).build(),
-        builder.setQuantityAndPrice(3, 158.86).build(),
-        builder.setTicker("MXRF11").setQuantityAndPrice(130 + 284, 9.33).build(),
-        builder.setQuantityAndPrice(15, 9.32).build(),
-        builder.setCategoryAndOperation("FII's", 'V').setTicker("VILG11")
-            .setQuantityAndPrice(71, 86.19).build(),
-        builder.setCategoryAndOperation("Ações", 'C').setTicker("ITSA4")
-            .setQuantityAndPrice(600, 10.46).build(),
-        builder.setQuantityAndPrice(45, 10.47).build()};
+      builder
+          .setCategoryAndOperation("FII's", 'C')
+          .setTicker("HGLG11")
+          .setQuantityAndPrice(11, 158.87)
+          .build(),
+      builder.setQuantityAndPrice(7, 158.88).build(),
+      builder.setQuantityAndPrice(3, 158.86).build(),
+      builder.setTicker("MXRF11").setQuantityAndPrice(130 + 284, 9.33).build(),
+      builder.setQuantityAndPrice(15, 9.32).build(),
+      builder
+          .setCategoryAndOperation("FII's", 'V')
+          .setTicker("VILG11")
+          .setQuantityAndPrice(71, 86.19)
+          .build(),
+      builder
+          .setCategoryAndOperation("Ações", 'C')
+          .setTicker("ITSA4")
+          .setQuantityAndPrice(600, 10.46)
+          .build(),
+      builder.setQuantityAndPrice(45, 10.47).build()
+    };
 
     try (InputStream testStream = new FileInputStream(testFile)) {
       Workbook wb = WorkbookFactory.create(testStream);
@@ -118,12 +139,14 @@ public class StatusInvestOutputTest {
         var expectedRow = expectedRows[rowIdx];
         Row row = sheet.getRow(rowIdx + 1);
         assertNotNull(row);
-        assertEquals(note.parseHeader().date(), LocalDate.ofInstant(
-            row.getCell(cellIdx++).getDateCellValue().toInstant(), ZoneId.systemDefault()));
+        assertEquals(
+            note.parseHeader().date(),
+            LocalDate.ofInstant(
+                row.getCell(cellIdx++).getDateCellValue().toInstant(), ZoneId.systemDefault()));
         assertEquals(expectedRow.category(), row.getCell(cellIdx++).getStringCellValue());
         assertEquals(expectedRow.ticker(), row.getCell(cellIdx++).getStringCellValue());
-        assertEquals(expectedRow.operation(),
-            row.getCell(cellIdx++).getStringCellValue().charAt(0));
+        assertEquals(
+            expectedRow.operation(), row.getCell(cellIdx++).getStringCellValue().charAt(0));
         assertEquals(expectedRow.quantity(), (int) (row.getCell(cellIdx++).getNumericCellValue()));
         assertEquals(expectedRow.price(), row.getCell(cellIdx++).getNumericCellValue());
         assertEquals(expectedRow.broker(), row.getCell(cellIdx++).getStringCellValue());
@@ -137,10 +160,25 @@ public class StatusInvestOutputTest {
 
   @Test
   public void summarization() throws Exception {
-    SinacorReader note = new SinacorReader(resources.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2), "");
+    SinacorReader note =
+        new SinacorReader(
+            resources.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2), "");
 
     var statusinvest = new StatusInvestOutput(note, shareMap, brokerMap);
-    File testFile = new File("/tmp/test.xlsx");
+    File testFile = getTempFile();
+    FileOutputStream output = new FileOutputStream(testFile);
+    statusinvest.writeToXslx(output);
+    statusinvest.summarizeCreatedFile(testFile);
+  }
+
+  @Test
+  public void summarizationNote3() throws Exception {
+    SinacorReader note =
+        new SinacorReader(
+            resources.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_3), "");
+
+    var statusinvest = new StatusInvestOutput(note, shareMap, brokerMap);
+    File testFile = getTempFile();
     FileOutputStream output = new FileOutputStream(testFile);
     statusinvest.writeToXslx(output);
     statusinvest.summarizeCreatedFile(testFile);
@@ -153,5 +191,13 @@ public class StatusInvestOutputTest {
     }
 
     assertTrue(diff < 1e-3, () -> String.format("Expected %f, found %f", x, y));
+  }
+
+  private File getTempFile() {
+    try {
+      return File.createTempFile("test", ".xslx");
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

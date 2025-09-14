@@ -1,26 +1,24 @@
 package dev.dfeprado.brokeragenote.core.input;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import dev.dfeprado.brokeragenote.core.NoteHeader;
 import dev.dfeprado.brokeragenote.core.NoteTotals;
 import dev.dfeprado.brokeragenote.core.Operation;
 import dev.dfeprado.brokeragenote.core.ResourcesUtil;
-import dev.dfeprado.brokeragenote.core.exceptions.BrokerageNoteReadError;
 import dev.dfeprado.brokeragenote.core.exceptions.ProtectedBrokerageNoteError;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.FieldSource;
-
 import java.io.File;
 import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.FieldSource;
 
 class SinacorReaderTest {
   private final ResourcesUtil resourcesUtil = new ResourcesUtil();
@@ -61,17 +59,25 @@ class SinacorReaderTest {
     }
   }
 
-  static List<Arguments> footerTestArgs = Arrays.asList(
-      Arguments.of(ResourcesUtil.NOTE_SAMPLE_1, 6_704.53, 1.67, 0.33, 0.0, 0.0, 6_702.53),
-      Arguments.of(ResourcesUtil.NOTE_SAMPLE_2, 7_972.45, 5.05, 1.01, 6_119.49, 0.30, 20_205.37));
+  static List<Arguments> footerTestArgs =
+      Arrays.asList(
+          Arguments.of(ResourcesUtil.NOTE_SAMPLE_1, 6_704.53, 1.67, 0.33, 0.0, 0.0, 6_702.53),
+          Arguments.of(
+              ResourcesUtil.NOTE_SAMPLE_2, 7_972.45, 5.05, 1.01, 6_119.49, 0.30, 20_205.37));
 
   @ParameterizedTest
   @FieldSource("footerTestArgs")
-  void canReadFooter(String noteFileName, double expectedTotal, double expectedFee,
-      double expectedEmoluments, double expectedIrrfBase, double expectedIrrf,
-      double expectedOpAmount) throws Exception {
-    try (SinacorReader reader = new SinacorReader(
-        resourcesUtil.getSinacorBrokerageNoteResourceFile(noteFileName))) {
+  void canReadFooter(
+      String noteFileName,
+      double expectedTotal,
+      double expectedFee,
+      double expectedEmoluments,
+      double expectedIrrfBase,
+      double expectedIrrf,
+      double expectedOpAmount)
+      throws Exception {
+    try (SinacorReader reader =
+        new SinacorReader(resourcesUtil.getSinacorBrokerageNoteResourceFile(noteFileName))) {
       NoteTotals totals = reader.parseTotals();
       assertEquals(expectedTotal, totals.total());
       assertEquals(expectedFee, totals.fee());
@@ -82,14 +88,16 @@ class SinacorReaderTest {
     }
   }
 
-  static List<Arguments> canReadOpsArgs = Arrays.asList(
-      Arguments.of(ResourcesUtil.NOTE_SAMPLE_1, 8), Arguments.of(ResourcesUtil.NOTE_SAMPLE_2, 8));
+  static List<Arguments> canReadOpsArgs =
+      Arrays.asList(
+          Arguments.of(ResourcesUtil.NOTE_SAMPLE_1, 8),
+          Arguments.of(ResourcesUtil.NOTE_SAMPLE_2, 8));
 
   @ParameterizedTest
   @FieldSource("canReadOpsArgs")
   void canReadOps(String noteFileName, int expectedOpsSize) throws Exception {
-    try (SinacorReader reader = new SinacorReader(
-        resourcesUtil.getSinacorBrokerageNoteResourceFile(noteFileName))) {
+    try (SinacorReader reader =
+        new SinacorReader(resourcesUtil.getSinacorBrokerageNoteResourceFile(noteFileName))) {
       List<Operation> ops = reader.parseOperations();
       assertEquals(expectedOpsSize, ops.size());
 
@@ -125,9 +133,10 @@ class SinacorReaderTest {
   }
 
   @Test
-  void checkIrrfCalc() throws BrokerageNoteReadError, URISyntaxException, Exception {
-    try (SinacorReader reader = new SinacorReader(
-        resourcesUtil.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2))) {
+  void checkIrrfCalc() throws Exception {
+    try (SinacorReader reader =
+        new SinacorReader(
+            resourcesUtil.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2))) {
       List<Operation> ops = reader.parseOperations();
       Operation op = ops.get(5);
       assertTrue(op.getShareName().startsWith("FII VINCI LG"));
@@ -137,10 +146,10 @@ class SinacorReaderTest {
   }
 
   @Test
-  void totalFeesAndEmolumentsForABuyOperation()
-      throws BrokerageNoteReadError, URISyntaxException, Exception {
-    try (SinacorReader reader = new SinacorReader(
-        resourcesUtil.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2))) {
+  void totalFeesAndEmolumentsForABuyOperation() throws Exception {
+    try (SinacorReader reader =
+        new SinacorReader(
+            resourcesUtil.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2))) {
 
       List<Operation> ops = reader.parseOperations();
       var op = ops.get(0);
@@ -172,10 +181,10 @@ class SinacorReaderTest {
   }
 
   @Test
-  void totalFeesAndEmolumentsForASellOperation()
-      throws BrokerageNoteReadError, URISyntaxException, Exception {
-    try (SinacorReader reader = new SinacorReader(
-        resourcesUtil.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2))) {
+  void totalFeesAndEmolumentsForASellOperation() throws Exception {
+    try (SinacorReader reader =
+        new SinacorReader(
+            resourcesUtil.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_2))) {
 
       List<Operation> ops = reader.parseOperations();
       var op = ops.get(5);
@@ -195,21 +204,42 @@ class SinacorReaderTest {
   }
 
   @Test
-  void openPasswordProtectedFile() throws BrokerageNoteReadError, URISyntaxException, Exception {
+  void openPasswordProtectedFile() throws Exception {
     try (SinacorReader reader =
-        new SinacorReader(resourcesUtil.getSinacorBrokerageNoteResourceFile(
-            ResourcesUtil.PROTECTED_NOTE_SAMPLE_1_123_PASSWORD), "123")) {
-    }
+        new SinacorReader(
+            resourcesUtil.getSinacorBrokerageNoteResourceFile(
+                ResourcesUtil.PROTECTED_NOTE_SAMPLE_1_123_PASSWORD),
+            "123")) {}
   }
 
   @Test
   void shouldFailWhenPasswordProtectedFile() {
-    assertThrows(ProtectedBrokerageNoteError.class, () -> {
-      try (SinacorReader reader =
-          new SinacorReader(resourcesUtil.getSinacorBrokerageNoteResourceFile(
-              ResourcesUtil.PROTECTED_NOTE_SAMPLE_1_123_PASSWORD))) {
-      }
-    });
+    assertThrows(
+        ProtectedBrokerageNoteError.class,
+        () -> {
+          try (SinacorReader reader =
+              new SinacorReader(
+                  resourcesUtil.getSinacorBrokerageNoteResourceFile(
+                      ResourcesUtil.PROTECTED_NOTE_SAMPLE_1_123_PASSWORD))) {}
+        });
+  }
+
+  @Test
+  void shouldReadBrokerageNote3() throws Exception {
+    try (SinacorReader reader =
+        new SinacorReader(
+            resourcesUtil.getSinacorBrokerageNoteResourceFile(ResourcesUtil.NOTE_SAMPLE_3))) {
+      var header = reader.parseHeader();
+      var operations = reader.parseOperations();
+      var totals = reader.parseTotals();
+      assertAlmostEquals(8_625.23, totals.total());
+      assertEquals("BRASIL ON NM", operations.getFirst().getShareName());
+      assertAlmostEquals(0.43, totals.emoluments());
+      // Nova taxa de transferência de ativos (TTA)
+      assertAlmostEquals(0.22, totals.transferTax());
+      // Emolumentos totais
+      assertAlmostEquals(0.43 + 0.22, totals.getTotalEmoluments());
+    }
   }
 
   static void assertAlmostEquals(double x, double y) {
@@ -223,5 +253,4 @@ class SinacorReaderTest {
     }
     return diff < 1e-3;
   }
-
 }

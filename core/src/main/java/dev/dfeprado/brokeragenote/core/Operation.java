@@ -7,8 +7,8 @@ public class Operation {
   private final double price;
   private final NoteTotals totals;
 
-  public Operation(OperationType type, String shareName, double quantity, double price,
-      NoteTotals totals) {
+  public Operation(
+      OperationType type, String shareName, double quantity, double price, NoteTotals totals) {
     this.type = type;
     this.shareName = shareName;
     this.quantity = quantity;
@@ -29,7 +29,7 @@ public class Operation {
   }
 
   public double getEmoluments() {
-    return totals.emoluments() * getTotal() / totals.noteOperationTotal();
+    return totals.getTotalEmoluments() * getTotal() / totals.noteOperationTotal();
   }
 
   public double getIrrf() {
@@ -71,9 +71,16 @@ public class Operation {
 
   @Override
   public String toString() {
-    return "Operation [type=" + type + ", shareName=" + shareName + ", quantity=" + quantity
-        + ", price=" + price + ", totals=" + totals + "]";
+    return "Operation [type="
+        + type
+        + ", shareName="
+        + shareName
+        + ", quantity="
+        + quantity
+        + ", price="
+        + price
+        + ", totals="
+        + totals
+        + "]";
   }
-
-
 }
