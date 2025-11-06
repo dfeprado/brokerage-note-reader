@@ -174,7 +174,7 @@ public class SinacorReader implements AutoCloseable {
       }
 
       String financialSummaryText = stripper.getTextForRegion(FINANCIAL_SUMMARY_REGION);
-      var total = extractValueOfField("Líquido\\spara\\s.+?\\s(.+)\\sD", financialSummaryText);
+      var total = extractValueOfField("Líquido\\spara\\s.+?\\s(.+)\\s(?:D|C)", financialSummaryText);
       var fee = extractValueOfField("Taxa de liquidação\\s(.+)\\sD", financialSummaryText);
       var emoluments = extractValueOfField("Emolumentos\\s(.+)\\sD", financialSummaryText);
       var transferTax =

@@ -5,7 +5,7 @@
     <parent>
         <groupId>dev.dfeprado.brokerage-note</groupId>
         <artifactId>brokerage-note</artifactId>
-        <version>2.2</version>
+        <version>2.1</version>
     </parent>
     <artifactId>brokerage-note.cmdrunner</artifactId>
     <name>Brokerage Note Command Runner</name>
